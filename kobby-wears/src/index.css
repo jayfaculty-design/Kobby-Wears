@@ -1,0 +1,22 @@
+@import "tailwindcss";
+
+@theme {
+  --font-logo-font: "a Alley Garden", "sans-serif";
+  --font-body-font: "Inter", "sans-serif";
+  --font-forum: "Forum", "sans-serif";
+  --font-open-sans: "Open Sans", "sans-serif";
+  --color-grey: #F5F5F5;
+}
+
+a.active {
+  color: rgb(192, 47, 141);
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+* {
+ scroll-behavior: smooth; 
+}
+.modal.show {
+  display: block;
+}
