@@ -11,6 +11,7 @@ import {
   IconCreditCard,
 } from "@tabler/icons-react";
 import React, { useEffect } from "react";
+import { Link } from "react-router";
 
 const Footer = () => {
   const top = () => {
@@ -24,9 +25,16 @@ const Footer = () => {
       <div>
         <h1 className="text-gray-200">Quick Links</h1>
         <ul>
-          <li>Hoodies</li>
-          <li>Shirts</li>
-          <li>Caps</li>
+          <Link to="full-products/hoodies">
+            {" "}
+            <li>Hoodies</li>
+          </Link>
+          <Link to="full-products/shirts">
+            <li>Shirts</li>
+          </Link>
+          <Link to="full-products/caps">
+            <li>Caps</li>
+          </Link>
         </ul>
       </div>
       <div className="mt-5 flex flex-col gap-2">
