@@ -19,9 +19,11 @@ const pool = new Pool({
   // database: "kobby-wears",
   // password: "facultyf",
   // port: 5432,
-  ssl: {
-    rejectUnauthorized: false,
-  },
+  ssl:
+    process.env.NODE_ENV === "production"
+      ? { rejectUnauthorized: false }
+      : false,
+
   connectionString: process.env.DATABASE_URL,
 });
 
