@@ -104,6 +104,7 @@ app.get("/products", async (req, res) => {
   } catch (error) {
     console.error("Error fetching products:", error);
     res.status(500).send("Error fetching products");
+    res.status(500).json({ error: error.message });
   }
 });
 
