@@ -14,11 +14,11 @@ app.use(cors());
 app.use(bodyParser.json());
 
 const pool = new Pool({
-  user: "postgres",
-  host: "localhost",
-  database: "kobby-wears",
-  password: "facultyf",
-  port: 5432,
+  // user: "postgres",
+  // host: "localhost",
+  // database: "kobby-wears",
+  // password: "facultyf",
+  // port: 5432,
   ssl: {
     rejectUnauthorized: false,
   },
