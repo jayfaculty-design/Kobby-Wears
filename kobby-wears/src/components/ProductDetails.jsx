@@ -16,9 +16,10 @@ const ProductDetails = () => {
   const { id } = useParams();
   const [products] = useFetch(`http://localhost:3001/products`);
   return (
-    <div className="mt-20 font-open-sans p-5">
+    <div className="mt-20 p-5">
       <div className="flex justify-center gap-5">
         {products.map((product) => {
+          let isInCart = cartItems.find((item) => item.id === product.id);
           if (product.id === parseFloat(id)) {
             return (
               <div className="" key={product.id}>
@@ -30,7 +31,7 @@ const ProductDetails = () => {
                   <p className="text-gray-500">Color:</p>
                   <span className="text-gray-500">{product.color}</span>
                 </div>
-                {cartItems.find((item) => item.id === product.id) ? (
+                {isInCart ? (
                   <div className="border w-full p-0 mt-5 flex items-center rounded-sm justify-between">
                     <button
                       onClick={() => decreaseQuantity(product)}
@@ -38,7 +39,7 @@ const ProductDetails = () => {
                     >
                       -
                     </button>
-                    <span>{product.quantity}</span>
+                    <span>{isInCart.quantity}</span>
                     <button
                       onClick={() => increaseQuantity(product)}
                       className="w-10 cursor-pointer h-10 text-[18px]"

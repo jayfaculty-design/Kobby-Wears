@@ -14,7 +14,7 @@ const Cart = () => {
     return acc + product.price * product.quantity;
   }, 0);
   return (
-    <div className="mt-20 p-5 pt-0 font-open-sans">
+    <div className="mt-20 p-5 pt-0">
       {cartItems.length > 0 ? (
         <div>
           <div className="flex items-center justify-between">

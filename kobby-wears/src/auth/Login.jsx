@@ -27,7 +27,7 @@ const Login = () => {
     }
   };
   return (
-    <div className="mt-0 p-5 font-open-sans">
+    <div className="mt-0 p-5">
       <p className="font-logo-font text-[24px]">Kobby Wears</p>
 
       <div className="mt-5 flex flex-col gap-3">
@@ -87,7 +87,7 @@ const Login = () => {
         </button>
         {error && (
           <div className="flex items-center justify-center text-center">
-            <p className="font-nova text-red-600">{error}</p>
+            <p className=" text-red-600">{error}</p>
           </div>
         )}
       </form>

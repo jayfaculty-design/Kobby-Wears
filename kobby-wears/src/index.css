@@ -9,21 +9,25 @@
   --font-nova: "Proxima Nova", "sans-serif";
   --font-open-sans: "Open Sans", "sans-serif";
   --font-poppins: "Poppins", "sans-serif";
-  --color-grey: #F5F5F5;
+  --font-work-sans: "Work Sans", serif;
+  --color-grey: #f5f5f5;
   --breakpoint-xs: 400px;
   --breakpoint-sm: 500px;
   --breakpoint-md: 786px;
   --breakpoint-lg: 1024px;
 }
+body {
+  font-family: var(--font-work-sans);
+}
 
 a.active {
-  color: oklch(0.8080.114 19.571);
+  color: oklch(0.808.114 19.571);
   font-weight: 400;
   text-decoration: underline;
   text-underline-offset: 5px;
 }
 * {
- scroll-behavior: smooth; 
+  scroll-behavior: smooth;
 }
 .modal.show {
   display: block;

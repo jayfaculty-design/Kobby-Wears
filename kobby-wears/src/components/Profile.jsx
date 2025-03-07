@@ -64,7 +64,7 @@ const Profile = () => {
     navigate("/");
   };
   return (
-    <div className="mt-20 p-5 pt-0 font-nova">
+    <div className="mt-20 p-5 pt-0">
       {isAuthenticated ? (
         <div>
           <div className="bg-red-100 pb-10 pt-3 pl-3 rounded-lg h-[50vh]">

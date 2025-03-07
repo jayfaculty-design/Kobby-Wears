@@ -21,7 +21,7 @@ const Register = () => {
     }
   };
   return (
-    <div className="mt-0 p-5 font-open-sans">
+    <div className="mt-0 p-5 ">
       <p className="font-logo-font text-[24px]">Kobby Wears</p>
       <div className="mt-5 flex flex-col gap-3">
         <h1 className="font-forum font-bold text-3xl">Sign Up</h1>

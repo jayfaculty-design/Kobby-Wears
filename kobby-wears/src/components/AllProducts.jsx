@@ -18,7 +18,7 @@ const AllProducts = () => {
   }, []);
   return (
     <div>
-      <div className="grid gap-5 sm:grid-cols-3 sm:gap-10 mt-36">
+      <div className="grid gap-5 grid-cols-2 lg:grid-cols-3 sm:gap-10 mt-36">
         <div
           className={`${
             products.length > 0 ? "hidden h-[0vh]" : "h-[30vh]"
@@ -49,7 +49,7 @@ const AllProducts = () => {
           const cartItem = cartItems.find((item) => item.id === product.id);
           return (
             <div
-              className="bg-grey flex rounded-md h-72 pb-5 pt-5 flex-col justify-center items-center p-2 font-open-sans"
+              className="bg-grey flex rounded-md h-72 pb-5 pt-5 flex-col justify-center items-center p-2"
               key={product.id}
             >
               <div className="relative">

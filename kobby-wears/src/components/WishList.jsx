@@ -10,7 +10,7 @@ const WishList = () => {
     useContext(CartContext);
 
   return (
-    <div className="font-body-font mt-20 p-5 pt-0">
+    <div className="mt-20 p-5 pt-0">
       {wishLists.length > 0 ? (
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-medium font-forum">WishLists</h1>

@@ -61,7 +61,7 @@ const NavBar = () => {
           <p className="font-logo-font text-[24px]">Kobby Wears</p>
         </div>
 
-        <div className="flex font-poppins flex-col gap-5 mt-5 border-b pb-5 border-gray-200">
+        <div className="flex flex-col gap-5 mt-5 border-b pb-5 border-gray-200">
           <Link
             className="flex items-center justify-between"
             onClick={() => {
