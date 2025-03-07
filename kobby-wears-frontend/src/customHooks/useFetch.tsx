@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 
-function useFetch(url: string) {
-  const [products, setProducts] = useState<Array>([]);
+function useFetch<T>(
+  url: string
+): [T | null, string | null, boolean, () => void] {
+  const [products, setProducts] = useState<T | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [errorMessage, setErrorMessage] = useState<string>("");
 

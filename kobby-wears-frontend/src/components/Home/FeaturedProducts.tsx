@@ -50,7 +50,7 @@ const FeaturedProducts = () => {
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {products.map((product) => {
+          {products?.map((product: Product) => {
             return product.featured === true ? (
               <div
                 className="product-box cursor-pointer border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-300"

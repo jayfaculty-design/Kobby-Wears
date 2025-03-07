@@ -1,11 +1,5 @@
-import React from 'react'
-
 const Shoes = () => {
-  return (
-    <div>
-      
-    </div>
-  )
-}
+  return <div></div>;
+};
 
-export default Shoes
+export default Shoes;

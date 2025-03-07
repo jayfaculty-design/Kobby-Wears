@@ -120,7 +120,7 @@ const ProductsSection = () => {
             {categories.map((category, index) => (
               <button
                 key={index}
-                onClick={() => setSelectedTab(category)}
+                onClick={() => setSelectedTab(category || "")}
                 className={`
                   px-4 py-2 cursor-pointer text-sm md:text-base whitespace-nowrap rounded-full transition-all
                   ${

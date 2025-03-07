@@ -1,11 +1,5 @@
-import React from 'react'
-
 const Hoodies = () => {
-  return (
-    <div>
-      
-    </div>
-  )
-}
+  return <div></div>;
+};
 
-export default Hoodies
+export default Hoodies;

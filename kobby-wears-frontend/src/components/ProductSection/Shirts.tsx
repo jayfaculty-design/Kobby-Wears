@@ -1,11 +1,5 @@
-import React from 'react'
-
 const Shirts = () => {
-  return (
-    <div>
-      
-    </div>
-  )
-}
+  return <div></div>;
+};
 
-export default Shirts
+export default Shirts;
