@@ -206,6 +206,7 @@ const ProductsSection = () => {
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     src={product.img_url || "/placeholder-product.jpg"}
                     alt={product.name}
+                    loading="lazy"
                   />
                   {!product.available && (
                     <div className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
