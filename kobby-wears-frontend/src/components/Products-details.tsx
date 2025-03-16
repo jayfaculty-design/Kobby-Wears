@@ -33,7 +33,7 @@ const ProductsDetails = () => {
   const { addToCart, cartItems, removeFromCart } = cartContext;
   const { id } = useParams();
   const [products, loading] = useFetch<Product[]>(
-    "http://localhost:3001/products"
+    "https://kobby-wears.onrender.com/products"
   );
   const [activeImage, setActiveImage] = useState(0);
   const [isWishlist, setIsWishlist] = useState(false);
