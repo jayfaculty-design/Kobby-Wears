@@ -16,15 +16,16 @@ interface Product {
   featured?: boolean;
 }
 
-// Define CartItem interface
+// Define CartItem interface to match your backend response
 interface CartItem {
   id: number;
-  price: number;
   quantity: number;
-  img_url: string;
-  name: string;
   size: string;
   color: string;
+  product_id: number;
+  name: string;
+  price: number;
+  img_url: string;
 }
 
 interface CartContextType {
@@ -45,6 +46,14 @@ export const CartContext = createContext<CartContextType | undefined>(
 );
 
 import { ReactNode } from "react";
+
+// Create an axios instance with the base URL
+const api = axios.create({
+  baseURL: "https://kobby-wears.onrender.com",
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -86,58 +95,23 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
-      const response = await axios.get(
-        "https://kobby-wears.onrender.com/cart",
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const response = await api.get("/cart", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       console.log("Cart API response:", response.data);
 
-      // Handle different response formats
-      let items: CartItem[] = [];
-
+      // Your backend returns an array of cart items directly
       if (Array.isArray(response.data)) {
-        // If response is an array, process it directly
-        items = response.data.map((item: any) => ({
-          id: item.id,
-          price: item.price,
-          quantity: item.quantity || 1,
-          img_url: item.img_url,
-          name: item.name,
-          size: item.size || "Standard",
-          color: item.color || "Default",
-        }));
-      } else if (response.data && typeof response.data === "object") {
-        // If response is an object, check for items/products property
-        const itemsArray =
-          response.data.items ||
-          response.data.products ||
-          response.data.cartItems ||
-          [];
-
-        if (Array.isArray(itemsArray)) {
-          items = itemsArray.map((item: any) => ({
-            id: item.id || item.product_id,
-            price: item.price || 0,
-            quantity: item.quantity || 1,
-            img_url: item.img_url || "",
-            name: item.name || "Product",
-            size: item.size || "Standard",
-            color: item.color || "Default",
-          }));
-        } else {
-          // If we can't find an array, use an empty array
-          console.error("Unexpected response format:", response.data);
-          setError("Unexpected response format from server");
-        }
+        setCartItems(response.data);
+      } else {
+        console.error("Unexpected response format:", response.data);
+        setError("Unexpected response format from server");
+        setCartItems([]);
       }
-
-      setCartItems(items);
     } catch (err: any) {
       console.error("Error fetching cart:", err);
-      setError(err.message || "Failed to fetch cart");
+      setError(err.response?.data || err.message || "Failed to fetch cart");
     } finally {
       setLoading(false);
     }
@@ -162,23 +136,21 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       const productToAdd = {
         product_id: product.id,
         quantity: product.quantity || 1,
-        size: product.size || "Standard",
+        size: product.size || "One Size", // Match backend default
         color: product.color || "Default",
       };
 
-      await axios.post(
-        "https://kobby-wears.onrender.com/cart/items",
-        productToAdd,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      await api.post("/cart/items", productToAdd, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       // Refresh cart after adding item
       await fetchCart();
     } catch (err: any) {
       console.error("Error adding to cart:", err);
-      setError(err.message || "Failed to add item to cart");
+      setError(
+        err.response?.data || err.message || "Failed to add item to cart"
+      );
     } finally {
       setLoading(false);
     }
@@ -191,18 +163,17 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       const token = localStorage.getItem("token");
       if (!token) return;
 
-      await axios.delete(
-        `https://kobby-wears.onrender.com/cart/items/${product.id}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      await api.delete(`/cart/items/${product.id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       // Refresh cart after removing item
       await fetchCart();
     } catch (err: any) {
       console.error("Error removing from cart:", err);
-      setError(err.message || "Failed to remove item from cart");
+      setError(
+        err.response?.data || err.message || "Failed to remove item from cart"
+      );
     } finally {
       setLoading(false);
     }
@@ -215,7 +186,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       const token = localStorage.getItem("token");
       if (!token) return;
 
-      await axios.delete("https://kobby-wears.onrender.com/cart", {
+      await api.delete("/cart", {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -223,7 +194,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       setCartItems([]);
     } catch (err: any) {
       console.error("Error clearing cart:", err);
-      setError(err.message || "Failed to clear cart");
+      setError(err.response?.data || err.message || "Failed to clear cart");
     } finally {
       setLoading(false);
     }
@@ -239,8 +210,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       const item = cartItems.find((item) => item.id === id);
       if (!item) return;
 
-      await axios.put(
-        `https://kobby-wears.onrender.com/cart/items/${id}`,
+      await api.put(
+        `/cart/items/${id}`,
         { quantity: item.quantity + 1 },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -249,7 +220,9 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       await fetchCart();
     } catch (err: any) {
       console.error("Error incrementing item:", err);
-      setError(err.message || "Failed to update item quantity");
+      setError(
+        err.response?.data || err.message || "Failed to update item quantity"
+      );
     } finally {
       setLoading(false);
     }
@@ -266,25 +239,24 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       if (!item) return;
 
       if (item.quantity > 1) {
-        await axios.put(
-          `https://kobby-wears.onrender.com/cart/items/${product.id}`,
+        await api.put(
+          `/cart/items/${product.id}`,
           { quantity: item.quantity - 1 },
           { headers: { Authorization: `Bearer ${token}` } }
         );
       } else {
-        await axios.delete(
-          `https://kobby-wears.onrender.com/cart/items/${product.id}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
+        await api.delete(`/cart/items/${product.id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
       }
 
       // Refresh cart after updating item
       await fetchCart();
     } catch (err: any) {
       console.error("Error decrementing item:", err);
-      setError(err.message || "Failed to update item quantity");
+      setError(
+        err.response?.data || err.message || "Failed to update item quantity"
+      );
     } finally {
       setLoading(false);
     }

@@ -8,9 +8,21 @@ require("dotenv").config();
 
 const app = express();
 const port = 3001;
-const secretKey = process.env.SECRET_KEY;
 
-app.use(cors());
+const secretKey = process.env.SECRET_KEY;
+if (!secretKey) {
+  console.error("SECRET_KEY environment variable is not set!");
+  process.exit(1); // Exit if critical config is missing
+}
+
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL || "kobby-wears.vercel.app",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
+
 app.use(bodyParser.json());
 
 const pool = new Pool({
@@ -27,7 +39,26 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false },
 
   connectionString: process.env.DATABASE_URL,
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
 });
+
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (authHeader) {
+    const token = authHeader.split(" ")[1];
+    jwt.verify(token, secretKey, (err, user) => {
+      if (err) {
+        return res.sendStatus(403);
+      }
+      req.user = user;
+      next();
+    });
+  } else {
+    res.sendStatus(401);
+  }
+};
 
 // Get user's cart
 app.get("/cart", authenticateToken, async (req, res) => {
@@ -60,7 +91,12 @@ app.get("/cart", authenticateToken, async (req, res) => {
     res.json(cartItemsResult.rows);
   } catch (error) {
     console.error("Error fetching cart:", error);
-    res.status(500).send("Error fetching cart");
+    res.status(500).json({
+      error: "Error fetching cart",
+      message: error.message,
+
+      stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
+    });
   }
 });
 
@@ -194,7 +230,26 @@ app.delete("/cart", authenticateToken, async (req, res) => {
 
 app.post("/register", async (req, res) => {
   const { username, password } = req.body;
+  if (!username || !password) {
+    return res
+      .status(400)
+      .json({ error: "Username and password are required" });
+  }
+
+  if (password.length < 8) {
+    return res
+      .status(400)
+      .json({ error: "Password must be at least 8 characters" });
+  }
   try {
+    const existingUser = await pool.query(
+      "SELECT id FROM users WHERE username = $1",
+      [username]
+    );
+
+    if (existingUser.rows.length > 0) {
+      return res.status(400).json({ error: "Username already exists" });
+    }
     const hashedPassword = await bcrypt.hash(password, 10);
     const result = await pool.query(
       "INSERT INTO users (username, password) VALUES ($1, $2) RETURNING *",
@@ -236,22 +291,6 @@ app.post("/login", async (req, res) => {
     res.status(500).send("Error logging in");
   }
 });
-
-const authenticateToken = (req, res, next) => {
-  const authHeader = req.headers.authorization;
-  if (authHeader) {
-    const token = authHeader.split(" ")[1];
-    jwt.verify(token, secretKey, (err, user) => {
-      if (err) {
-        return res.sendStatus(403);
-      }
-      req.user = user;
-      next();
-    });
-  } else {
-    res.sendStatus(401);
-  }
-};
 
 app.get("/protected", authenticateToken, (req, res) => {
   res.json({
