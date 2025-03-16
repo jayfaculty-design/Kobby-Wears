@@ -46,6 +46,7 @@ export const CartContext = createContext<CartContextType | undefined>(
 );
 
 import { ReactNode } from "react";
+import toast from "react-hot-toast";
 
 // Create an axios instance with the base URL
 const api = axios.create({
@@ -101,7 +102,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
       console.log("Cart API response:", response.data);
 
-      // Your backend returns an array of cart items directly
       if (Array.isArray(response.data)) {
         setCartItems(response.data);
       } else {
@@ -111,7 +111,10 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       }
     } catch (err: any) {
       console.error("Error fetching cart:", err);
-      setError(err.response?.data || err.message || "Failed to fetch cart");
+      const errorMessage =
+        err.response?.data || err.message || "Failed to clear cart";
+      setError(errorMessage);
+      toast.error("Error loading cart: " + errorMessage);
     } finally {
       setLoading(false);
     }
@@ -128,6 +131,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     try {
       const token = localStorage.getItem("token");
       if (!token) {
+        toast.error("Please log in to add items to cart");
         setError("Please log in to add items to cart");
         return;
       }
@@ -145,12 +149,14 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       });
 
       // Refresh cart after adding item
+      toast.success("Product added to cart");
       await fetchCart();
     } catch (err: any) {
       console.error("Error adding to cart:", err);
-      setError(
-        err.response?.data || err.message || "Failed to add item to cart"
-      );
+      const errorMessage =
+        err.response?.data || err.message || "Failed to add item to cart";
+      setError(errorMessage);
+      toast.error(`Error adding to cart: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
@@ -161,19 +167,24 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     setError(null);
     try {
       const token = localStorage.getItem("token");
-      if (!token) return;
+      if (!token) {
+        toast.error("Please login to remove items from cart");
+        setError("Please login to remove items from cart");
+        return;
+      }
 
       await api.delete(`/cart/items/${product.id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      // Refresh cart after removing item
+      toast.success("Product removed from cart");
       await fetchCart();
     } catch (err: any) {
       console.error("Error removing from cart:", err);
-      setError(
-        err.response?.data || err.message || "Failed to remove item from cart"
-      );
+      let errorMessage =
+        err.response?.data || err.message || "Failed to remove item from cart";
+      setError(errorMessage);
+      toast.error(`Error removing from cart: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
@@ -184,17 +195,25 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     setError(null);
     try {
       const token = localStorage.getItem("token");
-      if (!token) return;
+      if (!token) {
+        toast.error("Please log in to clear cart");
+        setError("Please log in to clear cart");
+        return;
+      }
 
       await api.delete("/cart", {
         headers: { Authorization: `Bearer ${token}` },
       });
 
       // Clear cart items in state
+      toast.success("Cart Cleared");
       setCartItems([]);
     } catch (err: any) {
       console.error("Error clearing cart:", err);
-      setError(err.response?.data || err.message || "Failed to clear cart");
+      const errorMessage =
+        err.response?.data || err.message || "Failed to clear cart";
+      setError(errorMessage);
+      toast.error(`Error clearing cart ${errorMessage}`);
     } finally {
       setLoading(false);
     }
@@ -205,7 +224,11 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     setError(null);
     try {
       const token = localStorage.getItem("token");
-      if (!token) return;
+      if (!token) {
+        toast.error("Please log in to update cart");
+        setError("Please log in to update cart");
+        return;
+      }
 
       const item = cartItems.find((item) => item.id === id);
       if (!item) return;
@@ -217,12 +240,15 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       );
 
       // Refresh cart after updating item
+      toast.success("Cart updated");
       await fetchCart();
     } catch (err: any) {
       console.error("Error incrementing item:", err);
-      setError(
-        err.response?.data || err.message || "Failed to update item quantity"
-      );
+      const errorMessage =
+        err.response?.data || err.message || "Failed to update cart";
+
+      setError(errorMessage);
+      toast.error("Error updating cart:" + errorMessage);
     } finally {
       setLoading(false);
     }
@@ -233,8 +259,11 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     setError(null);
     try {
       const token = localStorage.getItem("token");
-      if (!token) return;
-
+      if (!token) {
+        toast.error("Please log in to update cart");
+        setError("Please log in to update cart");
+        return;
+      }
       const item = cartItems.find((item) => item.id === product.id);
       if (!item) return;
 
@@ -251,12 +280,14 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       }
 
       // Refresh cart after updating item
+      toast.success("Cart updated");
       await fetchCart();
     } catch (err: any) {
       console.error("Error decrementing item:", err);
-      setError(
-        err.response?.data || err.message || "Failed to update item quantity"
-      );
+      const errorMessage =
+        err.response?.data || err.message || "Failed to update item quantity";
+      setError(errorMessage);
+      toast.error("Error updating cart: " + errorMessage);
     } finally {
       setLoading(false);
     }
