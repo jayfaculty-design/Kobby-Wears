@@ -1,6 +1,9 @@
 import useFetch from "@/customHooks/useFetch";
 import { Skeleton } from "../ui/skeleton";
-import { HeartIcon, ShoppingCartIcon } from "lucide-react";
+import { CheckCircle2Icon, ShoppingCartIcon, ChevronDown } from "lucide-react";
+import { Link } from "react-router";
+import { useContext, useState, useEffect } from "react";
+import { CartContext } from "@/contexts/CartContext";
 
 interface Product {
   id: number;
@@ -12,12 +15,58 @@ interface Product {
   available: boolean;
   featured: boolean;
   color: string;
+  size?: string;
+  quantity?: number;
 }
 
 const FeaturedProducts = () => {
   const [products, errorMessage, loading, fetchData] = useFetch<Product[]>(
     "http://localhost:3001/products"
   );
+
+  // Track selected size for each product
+  const [selectedSizes, setSelectedSizes] = useState<Record<number, string>>(
+    {}
+  );
+  const sizes = ["S", "M", "L", "XL"];
+
+  // Initialize selected sizes when products load
+  useEffect(() => {
+    if (products && products.length > 0) {
+      const initialSizes: Record<number, string> = {};
+      products.forEach((product) => {
+        if (product.featured) {
+          initialSizes[product.id] = sizes[0];
+        }
+      });
+      setSelectedSizes(initialSizes);
+    }
+  }, [products]);
+
+  const cartContext = useContext(CartContext);
+  if (!cartContext) {
+    return <div>Error: Cart context is not available.</div>;
+  }
+  const { addToCart, removeFromCart, cartItems } = cartContext;
+
+  // Handle size change for a specific product
+  const handleSizeChange = (productId: number, size: string) => {
+    setSelectedSizes((prev) => ({
+      ...prev,
+      [productId]: size,
+    }));
+  };
+
+  // Add product to cart with selected size
+  const handleAddToCart = (product: Product) => {
+    const productWithSize = {
+      ...product,
+      size: selectedSizes[product.id] || sizes[0],
+      quantity: 1,
+    };
+    addToCart(productWithSize);
+  };
+
   return (
     <section className="py-12 px-4 sm:px-6 lg:px-8 bg-white">
       <div className="container mx-auto">
@@ -51,19 +100,25 @@ const FeaturedProducts = () => {
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {products?.map((product: Product) => {
+            const inCart = cartItems.find(
+              (cartItem) => cartItem.id === product.id
+            );
             return product.featured === true ? (
               <div
-                className="product-box cursor-pointer border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-300"
+                className="product-box border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-all duration-300"
                 key={product.id}
               >
-                <div className="h-48 overflow-hidden">
-                  <img
-                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                    src={product.img_url}
-                    alt=""
-                    loading="lazy"
-                  />
-                </div>
+                <Link to={`/products/${product.id}`}>
+                  <div className="h-48 cursor-pointer overflow-hidden">
+                    <img
+                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                      src={product.img_url}
+                      alt={product.name}
+                      loading="lazy"
+                    />
+                  </div>
+                </Link>
+
                 <div className="p-4">
                   <span className="inline-block px-2 py-1 text-xs font-semibold bg-gray-100 text-gray-600 rounded mb-2">
                     {product.category}
@@ -88,15 +143,99 @@ const FeaturedProducts = () => {
                       ))}
                     <span className="text-xs text-gray-500 ml-1">(4.0)</span>
                   </div>
-                  <div className="flex justify-between items-center">
+
+                  <div className="flex justify-between items-center mt-2">
                     <h3 className="text-primary-color font-bold">
-                      ₵{product.price}
+                      ₵
+                      {typeof product.price === "number"
+                        ? product.price.toFixed(2)
+                        : product.price}
                     </h3>
-                    <HeartIcon className="heart hidden cursor-pointer text-primary-color" />
+
+                    {/* Styled Size Selector */}
+                    <div className="relative">
+                      <div className="text-xs text-neutral-500 mb-1">Size</div>
+                      <div
+                        className={`relative inline-block ${
+                          !product.available || !!inCart ? "opacity-60" : ""
+                        }`}
+                      >
+                        <select
+                          value={selectedSizes[product.id] || sizes[0]}
+                          onChange={(e) =>
+                            handleSizeChange(product.id, e.target.value)
+                          }
+                          disabled={!product.available || !!inCart}
+                          className={`
+                            appearance-none
+                            bg-neutral-50
+                            border
+                            ${
+                              inCart
+                                ? "border-black"
+                                : "border-neutral-200 hover:border-neutral-400"
+                            }
+                            rounded-md
+                            py-1.5
+                            pl-3
+                            pr-8
+                            text-sm
+                            font-medium
+                            focus:outline-none
+                            focus:ring-2
+                            focus:ring-primary-color
+                            focus:border-transparent
+                            cursor-pointer
+                            transition-all
+                            duration-200
+                            ${
+                              !product.available || !!inCart
+                                ? "cursor-not-allowed"
+                                : ""
+                            }
+                          `}
+                        >
+                          {sizes.map((size, index) => (
+                            <option key={index} value={size}>
+                              {size}
+                            </option>
+                          ))}
+                        </select>
+                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-neutral-500">
+                          <ChevronDown size={14} />
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <button className="mt-4 w-full cursor-pointer flex items-center justify-center gap-2 bg-primary-color text-white py-2 rounded transition-colors">
-                    <ShoppingCartIcon className="h-4 w-4" />
-                    Add to Cart
+
+                  <button
+                    disabled={!product.available}
+                    onClick={() =>
+                      inCart
+                        ? removeFromCart(product)
+                        : handleAddToCart(product)
+                    }
+                    className={`mt-4 ${
+                      inCart
+                        ? "bg-black text-white hover:bg-neutral-800"
+                        : product.available === false
+                        ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                        : "bg-primary-color text-white hover:bg-opacity-90 transform hover:translate-y-[-1px]"
+                    } w-full cursor-pointer flex items-center justify-center gap-2 py-2.5 rounded-md transition-all duration-200 hover:shadow-md`}
+                  >
+                    {!product.available ? (
+                      "Out of stock"
+                    ) : inCart ? (
+                      <>
+                        <CheckCircle2Icon className="h-4 w-4" />
+                        Added to cart
+                      </>
+                    ) : (
+                      <>
+                        <ShoppingCartIcon className="h-4 w-4" />
+                        Add to cart
+                      </>
+                    )}
                   </button>
                 </div>
               </div>

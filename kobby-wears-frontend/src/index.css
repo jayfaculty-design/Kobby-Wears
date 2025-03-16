@@ -133,7 +133,15 @@ body {
 .slick-dots {
   bottom: 10px;
 }
-
+.nav-menu.show {
+  display: block;
+}
+.checkmark.show {
+  display: block;
+}
+.cart-icon.show {
+  display: block;
+}
 .slick-prev,
 .slick-next {
   z-index: 10;

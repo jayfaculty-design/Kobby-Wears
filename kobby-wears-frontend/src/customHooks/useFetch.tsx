@@ -9,8 +9,6 @@ function useFetch<T>(
   const [errorMessage, setErrorMessage] = useState<string>("");
 
   const fetchData = () => {
-    setLoading(true);
-    setErrorMessage("");
     axios({
       url: url,
       method: "get",
@@ -30,6 +28,8 @@ function useFetch<T>(
   };
 
   useEffect(() => {
+    setLoading(true);
+    setErrorMessage("");
     fetchData();
   }, []);
 

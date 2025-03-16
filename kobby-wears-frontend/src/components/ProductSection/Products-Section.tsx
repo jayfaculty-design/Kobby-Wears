@@ -1,6 +1,14 @@
+import { CartContext } from "@/contexts/CartContext";
 import useFetch from "@/customHooks/useFetch";
-import { HeartIcon, ShoppingCartIcon, Loader2 } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import {
+  ShoppingCartIcon,
+  Loader2,
+  CheckCircle2Icon,
+  ChevronDown,
+  Heart,
+} from "lucide-react";
+import React, { useContext, useEffect, useState } from "react";
+import { Link } from "react-router";
 
 interface Product {
   id: number;
@@ -12,6 +20,8 @@ interface Product {
   available: boolean;
   featured: boolean;
   color: string;
+  size?: string;
+  quantity?: number;
 }
 
 const ProductsSection = () => {
@@ -22,6 +32,12 @@ const ProductsSection = () => {
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [favorites, setFavorites] = useState<number[]>([]);
   const [isGridView, setIsGridView] = useState(true);
+
+  // Track selected size for each product
+  const [selectedSizes, setSelectedSizes] = useState<Record<number, string>>(
+    {}
+  );
+  const sizes = ["S", "M", "L", "XL"];
 
   // Extract unique categories
   const categories = React.useMemo(() => {
@@ -42,7 +58,38 @@ const ProductsSection = () => {
     }
 
     setFilteredProducts(filtered);
+
+    // Initialize selected sizes for all products
+    const initialSizes: Record<number, string> = {};
+    filtered.forEach((product) => {
+      initialSizes[product.id] = sizes[0];
+    });
+    setSelectedSizes(initialSizes);
   }, [selectedTab, products]);
+
+  const cartContext = useContext(CartContext);
+  if (!cartContext) {
+    throw new Error("CartContext must be used within a CartProvider");
+  }
+  const { cartItems, addToCart, removeFromCart } = cartContext;
+
+  // Handle size change for a specific product
+  const handleSizeChange = (productId: number, size: string) => {
+    setSelectedSizes((prev) => ({
+      ...prev,
+      [productId]: size,
+    }));
+  };
+
+  // Add product to cart with selected size
+  const handleAddToCart = (product: Product) => {
+    const productWithSize = {
+      ...product,
+      size: selectedSizes[product.id] || sizes[0],
+      quantity: 1,
+    };
+    addToCart(productWithSize);
+  };
 
   // Toggle favorite status
   const toggleFavorite = (productId: number) => {
@@ -190,143 +237,212 @@ const ProductsSection = () => {
                 : "flex flex-col space-y-4"
             }
           >
-            {filteredProducts.map((product) => (
-              <div
-                key={product.id}
-                className={`product-box bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-all duration-300 ${
-                  !isGridView ? "flex flex-col md:flex-row" : ""
-                }`}
-              >
+            {filteredProducts.map((product) => {
+              const inCart = cartItems.find(
+                (cartItem) => cartItem.id === product.id
+              );
+
+              return (
                 <div
-                  className={`relative group ${
-                    !isGridView ? "md:w-1/3" : "h-48 sm:h-56"
+                  key={product.id}
+                  className={`product-box bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-all duration-300 ${
+                    !isGridView ? "flex flex-col md:flex-row" : ""
                   }`}
                 >
-                  <img
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    src={product.img_url || "/placeholder-product.jpg"}
-                    alt={product.name}
-                    loading="lazy"
-                  />
-                  {!product.available && (
-                    <div className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
-                      Out of Stock
-                    </div>
-                  )}
-                  {product.featured && (
-                    <div className="absolute top-2 right-2 bg-yellow-500 text-white text-xs font-bold px-2 py-1 rounded">
-                      Featured
-                    </div>
-                  )}
-                </div>
-
-                <div
-                  className={`p-4 flex flex-col ${
-                    !isGridView ? "md:w-2/3" : ""
-                  }`}
-                >
-                  <div className="flex-grow">
-                    <span className="inline-block px-2 py-1 text-xs font-semibold bg-gray-100 text-gray-600 rounded mb-2">
-                      {product.category}
-                    </span>
-                    <h3 className="text-lg font-medium text-gray-900 mb-1 line-clamp-1">
-                      {product.name}
-                    </h3>
-                    {!isGridView && (
-                      <p className="text-gray-600 text-sm mb-3 line-clamp-2">
-                        {product.description}
-                      </p>
-                    )}
-                    <div className="flex items-center mb-2">
-                      {Array(5)
-                        .fill(0)
-                        .map((_, i) => (
-                          <svg
-                            key={i}
-                            className={`w-4 h-4 ${
-                              i < 4 ? "text-yellow-400" : "text-gray-300"
-                            }`}
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                          >
-                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
-                          </svg>
-                        ))}
-                      <span className="text-xs text-gray-500 ml-1">(4.0)</span>
-                    </div>
-                  </div>
-
-                  <div className="flex justify-between items-center mt-2">
-                    <div className="flex items-center">
-                      <span className="text-xl font-bold text-primary-color">
-                        ₵
-                        {typeof product.price === "number"
-                          ? product.price.toFixed(2)
-                          : product.price}
-                      </span>
-                      {product.price < 100 && (
-                        <span className="ml-2 text-xs line-through text-gray-400">
-                          ₵{product.price * 1.2}
-                        </span>
-                      )}
-                    </div>
-                    <button
-                      onClick={() => toggleFavorite(product.id)}
-                      className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-                      aria-label={
-                        favorites.includes(product.id)
-                          ? "Remove from favorites"
-                          : "Add to favorites"
-                      }
-                    >
-                      <HeartIcon
-                        className={`h-5 w-5 ${
-                          favorites.includes(product.id)
-                            ? "fill-red-500 text-red-500"
-                            : "text-gray-400 hover:text-gray-700"
-                        }`}
-                      />
-                    </button>
-                  </div>
-
-                  <button
-                    disabled={!product.available}
-                    className={`mt-4 w-full flex items-center justify-center gap-2 py-2 rounded transition-colors ${
-                      product.available
-                        ? "bg-primary-color hover:bg-black text-white"
-                        : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                  <div
+                    className={`relative group ${
+                      !isGridView ? "md:w-1/3" : "h-48 sm:h-56"
                     }`}
                   >
-                    <ShoppingCartIcon className="h-4 w-4" />
-                    {product.available ? "Add to Cart" : "Out of Stock"}
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+                    <Link to={`/products/${product.id}`}>
+                      <img
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        src={product.img_url || "/placeholder-product.jpg"}
+                        alt={product.name}
+                        loading="lazy"
+                      />
+                    </Link>
+                    {!product.available && (
+                      <div className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
+                        Out of Stock
+                      </div>
+                    )}
+                    {product.featured && (
+                      <div className="absolute top-2 right-2 bg-yellow-500 text-white text-xs font-bold px-2 py-1 rounded">
+                        Featured
+                      </div>
+                    )}
+                  </div>
 
-        {/* Pagination (Optional) */}
-        {filteredProducts.length > 0 && (
-          <div className="mt-10 flex justify-center">
-            <nav className="flex items-center space-x-2">
-              <button className="px-3 py-1 rounded border border-gray-300 text-gray-700 hover:bg-gray-50">
-                Previous
-              </button>
-              <button className="px-3 py-1 rounded bg-primary-color text-white">
-                1
-              </button>
-              <button className="px-3 py-1 rounded border border-gray-300 text-gray-700 hover:bg-gray-50">
-                2
-              </button>
-              <button className="px-3 py-1 rounded border border-gray-300 text-gray-700 hover:bg-gray-50">
-                3
-              </button>
-              <span className="px-2 text-gray-500">...</span>
-              <button className="px-3 py-1 rounded border border-gray-300 text-gray-700 hover:bg-gray-50">
-                Next
-              </button>
-            </nav>
+                  <div
+                    className={`p-4 flex flex-col ${
+                      !isGridView ? "md:w-2/3" : ""
+                    }`}
+                  >
+                    <div className="flex-grow">
+                      <span className="inline-block px-2 py-1 text-xs font-semibold bg-gray-100 text-gray-600 rounded mb-2">
+                        {product.category}
+                      </span>
+                      <h3 className="text-lg font-medium text-gray-900 mb-1 line-clamp-1">
+                        {product.name}
+                      </h3>
+                      {!isGridView && (
+                        <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+                          {product.description}
+                        </p>
+                      )}
+                      <div className="flex items-center mb-2">
+                        {Array(5)
+                          .fill(0)
+                          .map((_, i) => (
+                            <svg
+                              key={i}
+                              className={`w-4 h-4 ${
+                                i < 4 ? "text-yellow-400" : "text-gray-300"
+                              }`}
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                            </svg>
+                          ))}
+                        <span className="text-xs text-gray-500 ml-1">
+                          (4.0)
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-between items-center mt-2">
+                      <div className="flex items-center">
+                        <span className="text-xl font-bold text-primary-color">
+                          ₵
+                          {typeof product.price === "number"
+                            ? product.price.toFixed(2)
+                            : product.price}
+                        </span>
+                        {product.price < 100 && (
+                          <span className="ml-2 text-xs line-through text-gray-400">
+                            ₵{(product.price * 1.2).toFixed(2)}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Styled Size Selector */}
+                      <div className="relative">
+                        <div className="text-xs text-neutral-500 mb-1">
+                          Size
+                        </div>
+                        <div
+                          className={`relative inline-block ${
+                            !product.available || !!inCart ? "opacity-60" : ""
+                          }`}
+                        >
+                          <select
+                            value={selectedSizes[product.id] || sizes[0]}
+                            onChange={(e) =>
+                              handleSizeChange(product.id, e.target.value)
+                            }
+                            disabled={!product.available || !!inCart}
+                            className={`
+                              appearance-none
+                              bg-neutral-50
+                              border
+                              ${
+                                inCart
+                                  ? "border-black"
+                                  : "border-neutral-200 hover:border-neutral-400"
+                              }
+                              rounded-md
+                              py-1.5
+                              pl-3
+                              pr-8
+                              text-sm
+                              font-medium
+                              focus:outline-none
+                              focus:ring-2
+                              focus:ring-primary-color
+                              focus:border-transparent
+                              cursor-pointer
+                              transition-all
+                              duration-200
+                              ${
+                                !product.available || !!inCart
+                                  ? "cursor-not-allowed"
+                                  : ""
+                              }
+                            `}
+                          >
+                            {sizes.map((size, index) => (
+                              <option key={index} value={size}>
+                                {size}
+                              </option>
+                            ))}
+                          </select>
+                          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-neutral-500">
+                            <ChevronDown size={14} />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between mt-4">
+                      <button
+                        onClick={() => toggleFavorite(product.id)}
+                        className={`p-2 rounded-full hover:bg-gray-100 transition-colors ${
+                          favorites.includes(product.id)
+                            ? "text-red-500"
+                            : "text-gray-400 hover:text-gray-700"
+                        }`}
+                        aria-label={
+                          favorites.includes(product.id)
+                            ? "Remove from favorites"
+                            : "Add to favorites"
+                        }
+                      >
+                        <Heart
+                          size={20}
+                          fill={
+                            favorites.includes(product.id)
+                              ? "currentColor"
+                              : "none"
+                          }
+                        />
+                      </button>
+
+                      <button
+                        onClick={() =>
+                          !inCart
+                            ? handleAddToCart(product)
+                            : removeFromCart(product)
+                        }
+                        disabled={!product.available}
+                        className={`flex-1 ml-2 flex items-center justify-center gap-2 py-2.5 rounded-md transition-all duration-200 ${
+                          inCart
+                            ? "bg-black text-white hover:bg-neutral-800"
+                            : product.available
+                            ? "bg-primary-color text-white hover:bg-opacity-90 transform hover:translate-y-[-1px]"
+                            : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                        } ${!isGridView ? "w-auto px-6" : ""}`}
+                      >
+                        {!product.available ? (
+                          "Out of stock"
+                        ) : inCart ? (
+                          <>
+                            <CheckCircle2Icon className="h-4 w-4" />
+                            Added to cart
+                          </>
+                        ) : (
+                          <>
+                            <ShoppingCartIcon className="h-4 w-4" />
+                            Add to cart
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
