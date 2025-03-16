@@ -17,7 +17,7 @@ if (!secretKey) {
 
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "kobby-wears.vercel.app",
+    origin: process.env.FRONTEND_URL || "https://kobby-wears.vercel.app",
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
