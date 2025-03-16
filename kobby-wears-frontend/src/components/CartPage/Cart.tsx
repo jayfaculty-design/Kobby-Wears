@@ -1,4 +1,4 @@
-import { useCart } from "@/contexts/CartContext";
+import { useCart } from "@/contexts/useCart";
 import {
   X,
   Trash2,
