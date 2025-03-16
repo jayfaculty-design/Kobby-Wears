@@ -14,19 +14,19 @@ app.use(cors());
 app.use(bodyParser.json());
 
 const pool = new Pool({
-  user: "postgres",
-  host: "localhost",
-  database: "kobby-wears",
-  password: "facultyf",
-  port: 5432,
+  // user: "postgres",
+  // host: "localhost",
+  // database: "kobby-wears",
+  // password: "facultyf",
+  // port: 5432,
   // user: process.env.DB_USER,
   // host: process.env.DB_HOST,
   // database: process.env.DB_DATABASE,
   // password: process.env.DB_PASSWORD,
   // port: process.env.DB_PORT,
-  // ssl: { rejectUnauthorized: false },
+  ssl: { rejectUnauthorized: false },
 
-  // connectionString: process.env.DATABASE_URL,
+  connectionString: process.env.DATABASE_URL,
 });
 
 app.post("/register", async (req, res) => {
