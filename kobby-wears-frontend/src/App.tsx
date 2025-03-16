@@ -19,9 +19,6 @@ import Error404 from "./Error404";
 import ProfilePage from "./components/ProfilePage";
 import Login from "./components/auth/Login";
 import Register from "./components/auth/Register";
-import axios from "axios";
-
-axios.defaults.baseURL = "https://kobby-wears.onrender.com/";
 
 const App = () => {
   return (
