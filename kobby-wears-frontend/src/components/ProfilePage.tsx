@@ -123,7 +123,7 @@ const ProfilePage = () => {
     setIsLoading(true);
     axios({
       method: "put",
-      url: "http://localhost:3001/profile",
+      url: "https://kobby-wears.onrender.com/profile",
       headers: {
         Authorization: `Bearer ${token}`,
       },

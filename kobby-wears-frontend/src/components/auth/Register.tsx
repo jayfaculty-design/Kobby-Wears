@@ -105,7 +105,7 @@ const Register = () => {
     setLoading(true);
 
     try {
-      await axios.post("http://localhost:3001/register", {
+      await axios.post("https://kobby-wears.onrender.com/register", {
         username: formData.username,
         email: formData.email,
         password: formData.password,
