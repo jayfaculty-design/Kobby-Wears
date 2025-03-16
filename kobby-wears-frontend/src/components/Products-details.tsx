@@ -8,6 +8,7 @@ import {
   Shield,
   ChevronRight,
   Heart,
+  Loader2,
 } from "lucide-react";
 import { useContext, useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
@@ -30,13 +31,19 @@ const ProductsDetails = () => {
   if (!cartContext) {
     throw new Error("CartContext must be used within a CartProvider");
   }
-  const { addToCart, cartItems, removeFromCart } = cartContext;
+  const {
+    addToCart,
+    cartItems,
+    removeFromCart,
+    loading: cartLoading,
+  } = cartContext;
   const { id } = useParams();
   const [products, loading] = useFetch<Product[]>(
     "https://kobby-wears.onrender.com/products"
   );
   const [activeImage, setActiveImage] = useState(0);
   const [isWishlist, setIsWishlist] = useState(false);
+  const [addingToCart, setAddingToCart] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -50,7 +57,8 @@ const ProductsDetails = () => {
   );
 
   const sizes = ["S", "M", "L", "XL"];
-  const inCart = cartItems.find((item) => item.id === mainProduct?.id);
+  // Check if product is in cart by matching product_id instead of id
+  const inCart = cartItems.find((item) => item.product_id === parseInt(id!));
   const [activeSize, setActiveSize] = useState(sizes[0]);
 
   // Mock multiple product images
@@ -64,6 +72,28 @@ const ProductsDetails = () => {
 
   const toggleWishlist = () => {
     setIsWishlist(!isWishlist);
+  };
+
+  const handleAddToCart = async () => {
+    if (!mainProduct) return;
+
+    setAddingToCart(true);
+    try {
+      if (!inCart) {
+        await addToCart({
+          ...mainProduct,
+          quantity: 1,
+          size: activeSize,
+        });
+      } else {
+        // If item is in cart, we need to pass the cart item id, not the product id
+        await removeFromCart({ id: inCart.id });
+      }
+    } catch (error) {
+      console.error("Error managing cart:", error);
+    } finally {
+      setAddingToCart(false);
+    }
   };
 
   if (loading) {
@@ -228,18 +258,20 @@ const ProductsDetails = () => {
 
           {/* Add to Cart Button */}
           <button
-            onClick={() =>
-              !inCart
-                ? addToCart({ ...mainProduct, size: activeSize })
-                : removeFromCart(mainProduct)
-            }
+            onClick={handleAddToCart}
+            disabled={addingToCart || cartLoading}
             className={`w-full py-4 px-6 cursor-pointer rounded-md font-medium flex items-center justify-center gap-2 transition-all duration-300 ${
               inCart
                 ? "bg-black text-white hover:bg-neutral-800"
                 : "bg-primary-color text-white hover:bg-opacity-90"
-            }`}
+            } disabled:opacity-70 disabled:cursor-not-allowed`}
           >
-            {inCart ? (
+            {addingToCart || cartLoading ? (
+              <>
+                <Loader2 size={20} className="animate-spin" />
+                {inCart ? "Removing..." : "Adding..."}
+              </>
+            ) : inCart ? (
               <>
                 <CheckCircle2Icon size={20} />
                 Added to Cart
