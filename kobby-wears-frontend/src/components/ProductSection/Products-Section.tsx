@@ -1,7 +1,7 @@
 // src/components/ProductsSection.tsx
 import { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router";
-import { Loader2 } from "lucide-react";
+
 import useFetch from "@/customHooks/useFetch";
 import ProductCard from "@/components/ProductCard";
 import ProductSkeleton from "@/components/ProductSkeleton";
