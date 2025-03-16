@@ -5,13 +5,25 @@ import {
   ShoppingBag,
   PlusCircleIcon,
   MinusCircleIcon,
+  Loader2,
+  AlertCircle,
+  RefreshCw,
 } from "lucide-react";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
 
 const Cart = () => {
-  const { cartItems, removeFromCart, clearCart, increment, decrement } =
-    useCart();
+  const {
+    cartItems,
+    removeFromCart,
+    clearCart,
+    increment,
+    decrement,
+    loading,
+    error,
+    refreshCart,
+  } = useCart();
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Calculate subtotal
   const subtotal = useMemo(() => {
@@ -25,6 +37,13 @@ const Cart = () => {
     window.scrollTo(0, 0);
   }, []);
 
+  // Handle manual refresh
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await refreshCart();
+    setIsRefreshing(false);
+  };
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
       <div className="pb-7 flex items-center justify-between border-b border-neutral-200">
@@ -32,21 +51,66 @@ const Cart = () => {
           <ShoppingBag className="hidden sm:inline-block" />
           Shopping Bag
           <span className="text-neutral-500">
-            ({cartItems.length === 0 ? "Empty" : cartItems.length})
+            (
+            {loading
+              ? "..."
+              : cartItems.length === 0
+              ? "Empty"
+              : cartItems.length}
+            )
           </span>
         </h1>
-        {cartItems.length > 0 && (
+        <div className="flex items-center gap-2">
+          {!loading && cartItems.length > 0 && (
+            <button
+              onClick={() => clearCart()}
+              className="flex items-center gap-1 text-sm text-red-600 hover:text-red-800 transition-colors px-3 py-1 rounded-md hover:bg-red-50"
+              disabled={loading}
+            >
+              <X size={18} />
+              <span className="hidden sm:inline">Clear All</span>
+            </button>
+          )}
           <button
-            onClick={() => clearCart()}
-            className="flex items-center gap-1 text-sm text-red-600 hover:text-red-800 transition-colors px-3 py-1 rounded-md hover:bg-red-50"
+            onClick={handleRefresh}
+            className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 transition-colors px-3 py-1 rounded-md hover:bg-blue-50"
+            disabled={loading || isRefreshing}
           >
-            <X size={18} />
-            <span className="hidden sm:inline">Clear All</span>
+            <RefreshCw
+              size={18}
+              className={isRefreshing ? "animate-spin" : ""}
+            />
+            <span className="hidden sm:inline">Refresh</span>
           </button>
-        )}
+        </div>
       </div>
 
-      {cartItems.length === 0 ? (
+      {/* Error Message */}
+      {error && (
+        <div className="mt-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative">
+          <div className="flex items-center">
+            <AlertCircle className="mr-2" size={18} />
+            <span>{error}</span>
+          </div>
+          <button
+            onClick={handleRefresh}
+            className="mt-2 bg-red-100 hover:bg-red-200 text-red-800 font-bold py-1 px-4 rounded text-sm"
+          >
+            Try Again
+          </button>
+        </div>
+      )}
+
+      {/* Loading State */}
+      {loading && !error && (
+        <div className="flex flex-col items-center justify-center h-[40vh] text-center">
+          <Loader2 size={40} className="text-primary-color animate-spin mb-4" />
+          <p className="text-lg text-neutral-600">Loading your cart...</p>
+        </div>
+      )}
+
+      {/* Empty Cart */}
+      {!loading && !error && cartItems.length === 0 ? (
         <div className="flex flex-col items-center justify-center h-[60vh] text-center">
           <div className="bg-neutral-100 p-6 rounded-full mb-4">
             <ShoppingBag size={40} className="text-neutral-400" />
@@ -64,7 +128,10 @@ const Cart = () => {
             Shop our products
           </Link>
         </div>
-      ) : (
+      ) : null}
+
+      {/* Cart Items */}
+      {!loading && !error && cartItems.length > 0 && (
         <div className="mt-6">
           <div className="space-y-6 md:space-y-8">
             {cartItems.map((product, index: number) => (
@@ -84,12 +151,16 @@ const Cart = () => {
                     <div>
                       <h3 className="font-medium text-lg">{product.name}</h3>
                       <p className="text-xl font-semibold mt-1">
-                        ₵{product.price}
+                        ₵
+                        {typeof product.price === "number"
+                          ? product.price.toFixed(2)
+                          : product.price}
                       </p>
                     </div>
                     <button
-                      className="text-red-500 hover:text-red-700 p-1"
+                      className="text-red-500 hover:text-red-700 p-1 disabled:opacity-50"
                       onClick={() => removeFromCart(product)}
+                      disabled={loading}
                       aria-label="Remove item"
                     >
                       <Trash2 size={18} />
@@ -113,25 +184,32 @@ const Cart = () => {
                         {product.color || "Default"}
                       </span>
                     </div>
-                    <div className="bg-neutral-50 px-3 py-2 rounded flex gap-3">
+                    <div className="bg-neutral-50 px-3 py-2 rounded flex items-center justify-between">
                       <button
                         onClick={() => decrement(product)}
-                        className="cursor-pointer"
+                        className="cursor-pointer text-neutral-600 hover:text-black disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={loading || product.quantity <= 1}
                       >
-                        <MinusCircleIcon />
+                        <MinusCircleIcon size={20} />
                       </button>
+                      <span className="font-medium mx-2">
+                        {product.quantity}
+                      </span>
                       <button
-                        className="cursor-pointer"
-                        onClick={() => increment(product)}
+                        className="cursor-pointer text-neutral-600 hover:text-black disabled:opacity-50 disabled:cursor-not-allowed"
+                        onClick={() => increment(product.id)}
+                        disabled={loading}
                       >
-                        <PlusCircleIcon />
+                        <PlusCircleIcon size={20} />
                       </button>
                     </div>
                     <div className="bg-neutral-50 px-3 py-2 rounded">
                       <span className="block text-xs text-neutral-500">
-                        Quantity
+                        Total
                       </span>
-                      <span className="font-medium">{product.quantity}</span>
+                      <span className="font-medium">
+                        ₵{(product.price * product.quantity).toFixed(2)}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -148,8 +226,18 @@ const Cart = () => {
               <p>Shipping</p>
               <p>Calculated at checkout</p>
             </div>
-            <button className="w-full cursor-pointer bg-black text-white py-4 rounded-md font-medium hover:bg-neutral-800 transition-all transform hover:scale-[1.01] shadow-md">
-              Proceed to checkout
+            <button
+              className="w-full cursor-pointer bg-black text-white py-4 rounded-md font-medium hover:bg-neutral-800 transition-all transform hover:scale-[1.01] shadow-md disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
+              disabled={loading || cartItems.length === 0}
+            >
+              {loading ? (
+                <span className="flex items-center justify-center">
+                  <Loader2 size={20} className="animate-spin mr-2" />
+                  Processing...
+                </span>
+              ) : (
+                "Proceed to checkout"
+              )}
             </button>
             <Link
               to="/"

@@ -1,12 +1,13 @@
-import { CartContext } from "@/contexts/CartContext";
+import { useCart } from "@/contexts/useCart"; // Updated import path
 import useFetch from "@/customHooks/useFetch";
 import {
   CheckCircle2Icon,
   Loader2,
   ShoppingCartIcon,
   ChevronDown,
+  AlertCircle,
 } from "lucide-react";
-import { useContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router";
 
 interface Product {
@@ -29,12 +30,14 @@ const Caps = () => {
     "https://kobby-wears.onrender.com/products"
   );
 
-  // Get cart context
-  const cartContext = useContext(CartContext);
-  if (!cartContext) {
-    throw new Error("CartContext must be used within a CartProvider");
-  }
-  const { cartItems, addToCart, removeFromCart } = cartContext;
+  // Get cart context with updated hook
+  const {
+    cartItems,
+    addToCart,
+    removeFromCart,
+    loading: cartLoading,
+    error: cartError,
+  } = useCart();
 
   // Track selected size for each product
   const [selectedSizes, setSelectedSizes] = useState<Record<number, string>>(
@@ -42,16 +45,21 @@ const Caps = () => {
   );
   const sizes = ["S", "M", "L", "XL"];
 
+  // Track loading state for individual products
+  const [loadingProducts, setLoadingProducts] = useState<
+    Record<number, boolean>
+  >({});
+
   useEffect(() => {
     window.scrollTo(0, 0);
     if (Array.isArray(products)) {
-      const allCaps = products.filter((jean) => jean.category === "Caps");
+      const allCaps = products.filter((product) => product.category === "Caps");
       setCaps(allCaps);
 
       // Initialize selected sizes for all products
       const initialSizes: Record<number, string> = {};
-      allCaps.forEach((jean) => {
-        initialSizes[jean.id] = sizes[0];
+      allCaps.forEach((product) => {
+        initialSizes[product.id] = sizes[0];
       });
       setSelectedSizes(initialSizes);
     }
@@ -66,13 +74,38 @@ const Caps = () => {
   };
 
   // Add product to cart with selected size
-  const handleAddToCart = (product: Product) => {
-    const productWithSize = {
-      ...product,
-      size: selectedSizes[product.id] || sizes[0],
-      quantity: 1,
-    };
-    addToCart(productWithSize);
+  const handleAddToCart = async (product: Product) => {
+    // Set loading state for this product
+    setLoadingProducts((prev) => ({ ...prev, [product.id]: true }));
+
+    try {
+      const productWithSize = {
+        ...product,
+        size: selectedSizes[product.id] || sizes[0],
+        quantity: 1,
+      };
+      await addToCart(productWithSize);
+    } catch (error) {
+      console.error("Failed to add product to cart:", error);
+    } finally {
+      // Clear loading state
+      setLoadingProducts((prev) => ({ ...prev, [product.id]: false }));
+    }
+  };
+
+  // Handle remove from cart
+  const handleRemoveFromCart = async (product: Product) => {
+    // Set loading state for this product
+    setLoadingProducts((prev) => ({ ...prev, [product.id]: true }));
+
+    try {
+      await removeFromCart(product);
+    } catch (error) {
+      console.error("Failed to remove product from cart:", error);
+    } finally {
+      // Clear loading state
+      setLoadingProducts((prev) => ({ ...prev, [product.id]: false }));
+    }
   };
 
   return (
@@ -82,15 +115,27 @@ const Caps = () => {
           Products
         </Link>
         <span>/</span>
-        <p>Jeans</p>
+        <p>Caps</p>
       </div>
 
+      {/* Cart Error Message */}
+      {cartError && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative mb-6">
+          <div className="flex items-center">
+            <AlertCircle className="mr-2" size={18} />
+            <span>{cartError}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Loading State */}
       {loading && (
         <div className="flex justify-center items-center py-20">
           <Loader2 className="animate-spin h-10 w-10 text-primary-color" />
         </div>
       )}
 
+      {/* Error Message */}
       {errorMessage && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative mb-6">
           <p>Unable to load products: {errorMessage}</p>
@@ -103,31 +148,60 @@ const Caps = () => {
         </div>
       )}
 
+      {/* Empty State */}
+      {!loading && !errorMessage && caps.length === 0 && (
+        <div className="text-center py-16 bg-white rounded-lg shadow-sm">
+          <svg
+            className="mx-auto h-12 w-12 text-gray-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
+            />
+          </svg>
+          <h3 className="mt-2 text-lg font-medium text-gray-900">
+            No caps found
+          </h3>
+          <p className="mt-1 text-gray-500">
+            Check back later for new arrivals.
+          </p>
+        </div>
+      )}
+
+      {/* Products Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        {caps.map((jean) => {
-          const inCart = cartItems.find((cartItem) => cartItem.id === jean.id);
+        {caps.map((product) => {
+          const inCart = cartItems.find(
+            (cartItem) => cartItem.id === product.id
+          );
+          const isProductLoading = loadingProducts[product.id] || cartLoading;
 
           return (
             <div
-              key={jean.id}
+              key={product.id}
               className="product-box bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-all duration-300"
             >
               <div className="relative group h-48 sm:h-56">
-                <Link to={`/products/${jean.id}`}>
+                <Link to={`/products/${product.id}`}>
                   <img
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    src={jean.img_url}
-                    alt={jean.name}
+                    src={product.img_url}
+                    alt={product.name}
                     loading="lazy"
                   />
                 </Link>
 
-                {!jean.available && (
+                {!product.available && (
                   <div className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
                     Out of Stock
                   </div>
                 )}
-                {jean.featured === true && (
+                {product.featured === true && (
                   <div className="absolute top-2 right-2 bg-yellow-500 text-white text-xs font-bold px-2 py-1 rounded">
                     Featured
                   </div>
@@ -137,10 +211,10 @@ const Caps = () => {
               <div className="p-4 flex flex-col">
                 <div className="flex-grow">
                   <span className="inline-block px-2 py-1 text-xs font-semibold bg-gray-100 text-gray-600 rounded mb-2">
-                    {jean.category}
+                    {product.category}
                   </span>
                   <h3 className="text-lg font-medium text-gray-900 mb-1 line-clamp-1">
-                    {jean.name}
+                    {product.name}
                   </h3>
                   <div className="flex items-center mb-2">
                     {Array(5)
@@ -165,13 +239,13 @@ const Caps = () => {
                   <div className="flex items-center">
                     <span className="text-xl font-bold text-primary-color">
                       ₵
-                      {typeof jean.price === "number"
-                        ? jean.price.toFixed(2)
-                        : jean.price}
+                      {typeof product.price === "number"
+                        ? product.price.toFixed(2)
+                        : product.price}
                     </span>
-                    {jean.price < 100 && (
+                    {product.price < 100 && (
                       <span className="ml-2 text-xs line-through text-gray-400">
-                        ₵{(jean.price * 1.2).toFixed(2)}
+                        ₵{(product.price * 1.2).toFixed(2)}
                       </span>
                     )}
                   </div>
@@ -181,15 +255,19 @@ const Caps = () => {
                     <div className="text-xs text-neutral-500 mb-1">Size</div>
                     <div
                       className={`relative inline-block ${
-                        !jean.available || !!inCart ? "opacity-60" : ""
+                        !product.available || !!inCart || isProductLoading
+                          ? "opacity-60"
+                          : ""
                       }`}
                     >
                       <select
-                        value={selectedSizes[jean.id] || sizes[0]}
+                        value={selectedSizes[product.id] || sizes[0]}
                         onChange={(e) =>
-                          handleSizeChange(jean.id, e.target.value)
+                          handleSizeChange(product.id, e.target.value)
                         }
-                        disabled={!jean.available || !!inCart}
+                        disabled={
+                          !product.available || !!inCart || isProductLoading
+                        }
                         className={`
                           appearance-none
                           bg-neutral-50
@@ -213,7 +291,7 @@ const Caps = () => {
                           transition-all
                           duration-200
                           ${
-                            !jean.available || !!inCart
+                            !product.available || !!inCart || isProductLoading
                               ? "cursor-not-allowed"
                               : ""
                           }
@@ -236,20 +314,28 @@ const Caps = () => {
                   className={`${
                     inCart
                       ? "bg-black text-white"
-                      : jean.available
+                      : product.available
                       ? "cursor-pointer bg-primary-color text-white"
                       : "bg-gray-200 text-gray-500 cursor-not-allowed"
                   } mt-4 w-full flex items-center justify-center gap-2 py-2.5 rounded-md transition-all duration-200 hover:shadow-md ${
-                    jean.available && !inCart
+                    product.available && !inCart && !isProductLoading
                       ? "hover:bg-opacity-90 transform hover:translate-y-[-1px]"
                       : ""
-                  }`}
-                  disabled={!jean.available}
+                  } ${isProductLoading ? "opacity-70 cursor-wait" : ""}`}
+                  disabled={!product.available || isProductLoading}
                   onClick={() => {
-                    inCart ? removeFromCart(jean) : handleAddToCart(jean);
+                    if (isProductLoading) return;
+                    inCart
+                      ? handleRemoveFromCart(product)
+                      : handleAddToCart(product);
                   }}
                 >
-                  {!jean.available ? (
+                  {isProductLoading ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin mr-1" />
+                      Processing...
+                    </>
+                  ) : !product.available ? (
                     "Out of stock"
                   ) : inCart ? (
                     <>

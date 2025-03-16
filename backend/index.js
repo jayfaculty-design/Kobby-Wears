@@ -29,6 +29,169 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
 
+// Get user's cart
+app.get("/cart", authenticateToken, async (req, res) => {
+  try {
+    // Check if user has a cart
+    let cartResult = await pool.query(
+      "SELECT id FROM carts WHERE user_id = $1",
+      [req.user.id]
+    );
+
+    // If no cart exists, create one
+    if (cartResult.rows.length === 0) {
+      cartResult = await pool.query(
+        "INSERT INTO carts (user_id) VALUES ($1) RETURNING id",
+        [req.user.id]
+      );
+    }
+
+    const cartId = cartResult.rows[0].id;
+
+    // Get cart items with product details
+    const cartItemsResult = await pool.query(
+      `SELECT ci.id, ci.quantity, ci.size, ci.color, p.id as product_id, p.name, p.price, p.img_url
+       FROM cart_items ci
+       JOIN products p ON ci.product_id = p.id
+       WHERE ci.cart_id = $1`,
+      [cartId]
+    );
+
+    res.json(cartItemsResult.rows);
+  } catch (error) {
+    console.error("Error fetching cart:", error);
+    res.status(500).send("Error fetching cart");
+  }
+});
+
+// Add item to cart
+app.post("/cart/items", authenticateToken, async (req, res) => {
+  const { product_id, quantity, size, color } = req.body;
+
+  try {
+    // Get or create cart
+    let cartResult = await pool.query(
+      "SELECT id FROM carts WHERE user_id = $1",
+      [req.user.id]
+    );
+
+    if (cartResult.rows.length === 0) {
+      cartResult = await pool.query(
+        "INSERT INTO carts (user_id) VALUES ($1) RETURNING id",
+        [req.user.id]
+      );
+    }
+
+    const cartId = cartResult.rows[0].id;
+
+    // Check if item already exists
+    const existingItem = await pool.query(
+      "SELECT id, quantity FROM cart_items WHERE cart_id = $1 AND product_id = $2 AND size = $3 AND color = $4",
+      [cartId, product_id, size, color]
+    );
+
+    if (existingItem.rows.length > 0) {
+      // Update quantity
+      await pool.query(
+        "UPDATE cart_items SET quantity = quantity + $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2",
+        [quantity, existingItem.rows[0].id]
+      );
+    } else {
+      // Insert new item
+      await pool.query(
+        "INSERT INTO cart_items (cart_id, product_id, quantity, size, color) VALUES ($1, $2, $3, $4, $5)",
+        [cartId, product_id, quantity, size || "One Size", color || "Default"]
+      );
+    }
+
+    res.status(201).send("Item added to cart");
+  } catch (error) {
+    console.error("Error adding item to cart:", error);
+    res.status(500).send("Error adding item to cart");
+  }
+});
+
+// Update cart item quantity
+app.put("/cart/items/:id", authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  const { quantity } = req.body;
+
+  try {
+    // Verify the cart item belongs to user's cart
+    const cartCheck = await pool.query(
+      `SELECT ci.id FROM cart_items ci
+       JOIN carts c ON ci.cart_id = c.id
+       WHERE ci.id = $1 AND c.user_id = $2`,
+      [id, req.user.id]
+    );
+
+    if (cartCheck.rows.length === 0) {
+      return res.status(404).send("Cart item not found");
+    }
+
+    if (quantity > 0) {
+      await pool.query(
+        "UPDATE cart_items SET quantity = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2",
+        [quantity, id]
+      );
+    } else {
+      await pool.query("DELETE FROM cart_items WHERE id = $1", [id]);
+    }
+
+    res.send("Cart updated");
+  } catch (error) {
+    console.error("Error updating cart:", error);
+    res.status(500).send("Error updating cart");
+  }
+});
+
+// Remove item from cart
+app.delete("/cart/items/:id", authenticateToken, async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // Verify the cart item belongs to user's cart
+    const cartCheck = await pool.query(
+      `SELECT ci.id FROM cart_items ci
+       JOIN carts c ON ci.cart_id = c.id
+       WHERE ci.id = $1 AND c.user_id = $2`,
+      [id, req.user.id]
+    );
+
+    if (cartCheck.rows.length === 0) {
+      return res.status(404).send("Cart item not found");
+    }
+
+    await pool.query("DELETE FROM cart_items WHERE id = $1", [id]);
+
+    res.send("Item removed from cart");
+  } catch (error) {
+    console.error("Error removing item:", error);
+    res.status(500).send("Error removing item");
+  }
+});
+
+// Clear cart
+app.delete("/cart", authenticateToken, async (req, res) => {
+  try {
+    const cartResult = await pool.query(
+      "SELECT id FROM carts WHERE user_id = $1",
+      [req.user.id]
+    );
+
+    if (cartResult.rows.length > 0) {
+      await pool.query("DELETE FROM cart_items WHERE cart_id = $1", [
+        cartResult.rows[0].id,
+      ]);
+    }
+
+    res.send("Cart cleared");
+  } catch (error) {
+    console.error("Error clearing cart:", error);
+    res.status(500).send("Error clearing cart");
+  }
+});
+
 app.post("/register", async (req, res) => {
   const { username, password } = req.body;
   try {
