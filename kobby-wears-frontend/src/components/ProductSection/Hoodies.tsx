@@ -28,6 +28,7 @@ const Hoodies = () => {
   const [products, loading, errorMessage, fetchData] = useFetch<Product[]>(
     "https://kobby-wears.onrender.com/products"
   );
+  const [addingToCart, setAddingToCart] = useState<Record<number, boolean>>({});
 
   // Get cart context
   const cartContext = useContext(CartContext);
@@ -67,14 +68,40 @@ const Hoodies = () => {
     }));
   };
 
+  // Check if product is in cart
+  const isInCart = (productId: number) => {
+    return cartItems.some((item) => item.product_id === productId);
+  };
+
+  // Get cart item by product id
+  const getCartItem = (productId: number) => {
+    return cartItems.find((item) => item.product_id === productId);
+  };
+
   // Add product to cart with selected size
-  const handleAddToCart = (product: Product) => {
-    const productWithSize = {
-      ...product,
-      size: selectedSizes[product.id] || sizes[0],
-      quantity: 1,
-    };
-    addToCart(productWithSize);
+  const handleAddToCart = async (product: Product) => {
+    setAddingToCart((prev) => ({ ...prev, [product.id]: true }));
+
+    try {
+      const productWithSize = {
+        ...product,
+        size: selectedSizes[product.id] || sizes[0],
+        quantity: 1,
+      };
+
+      if (isInCart(product.id)) {
+        const cartItem = getCartItem(product.id);
+        if (cartItem) {
+          await removeFromCart({ id: cartItem.id });
+        }
+      } else {
+        await addToCart(productWithSize);
+      }
+    } catch (error) {
+      console.error("Error managing cart:", error);
+    } finally {
+      setAddingToCart((prev) => ({ ...prev, [product.id]: false }));
+    }
   };
 
   return (
@@ -106,30 +133,31 @@ const Hoodies = () => {
       )}
 
       <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        {hoodies.map((jean) => {
-          const inCart = cartItems.find((cartItem) => cartItem.id === jean.id);
+        {hoodies.map((hoodie) => {
+          const inCart = isInCart(hoodie.id);
+          const isAdding = addingToCart[hoodie.id] || false;
 
           return (
             <div
-              key={jean.id}
+              key={hoodie.id}
               className="product-box bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-all duration-300"
             >
               <div className="relative group h-48 sm:h-56">
-                <Link to={`/products/${jean.id}`}>
+                <Link to={`/products/${hoodie.id}`}>
                   <img
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    src={jean.img_url}
-                    alt={jean.name}
+                    src={hoodie.img_url}
+                    alt={hoodie.name}
                     loading="lazy"
                   />
                 </Link>
 
-                {!jean.available && (
+                {!hoodie.available && (
                   <div className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
                     Out of Stock
                   </div>
                 )}
-                {jean.featured === true && (
+                {hoodie.featured === true && (
                   <div className="absolute top-2 right-2 bg-yellow-500 text-white text-xs font-bold px-2 py-1 rounded">
                     Featured
                   </div>
@@ -139,10 +167,10 @@ const Hoodies = () => {
               <div className="p-4 flex flex-col">
                 <div className="flex-grow">
                   <span className="inline-block px-2 py-1 text-xs font-semibold bg-gray-100 text-gray-600 rounded mb-2">
-                    {jean.category}
+                    {hoodie.category}
                   </span>
                   <h3 className="text-lg font-medium text-gray-900 mb-1 line-clamp-1">
-                    {jean.name}
+                    {hoodie.name}
                   </h3>
                   <div className="flex items-center mb-2">
                     {Array(5)
@@ -167,13 +195,13 @@ const Hoodies = () => {
                   <div className="flex items-center">
                     <span className="text-xl font-bold text-primary-color">
                       ₵
-                      {typeof jean.price === "number"
-                        ? jean.price.toFixed(2)
-                        : jean.price}
+                      {typeof hoodie.price === "number"
+                        ? hoodie.price.toFixed(2)
+                        : hoodie.price}
                     </span>
-                    {jean.price < 100 && (
+                    {hoodie.price < 100 && (
                       <span className="ml-2 text-xs line-through text-gray-400">
-                        ₵{(jean.price * 1.2).toFixed(2)}
+                        ₵{(hoodie.price * 1.2).toFixed(2)}
                       </span>
                     )}
                   </div>
@@ -183,15 +211,15 @@ const Hoodies = () => {
                     <div className="text-xs text-neutral-500 mb-1">Size</div>
                     <div
                       className={`relative inline-block ${
-                        !jean.available || !!inCart ? "opacity-60" : ""
+                        !hoodie.available || !!inCart ? "opacity-60" : ""
                       }`}
                     >
                       <select
-                        value={selectedSizes[jean.id] || sizes[0]}
+                        value={selectedSizes[hoodie.id] || sizes[0]}
                         onChange={(e) =>
-                          handleSizeChange(jean.id, e.target.value)
+                          handleSizeChange(hoodie.id, e.target.value)
                         }
-                        disabled={!jean.available || !!inCart}
+                        disabled={!hoodie.available || !!inCart}
                         className={`
                           appearance-none
                           bg-neutral-50
@@ -215,7 +243,7 @@ const Hoodies = () => {
                           transition-all
                           duration-200
                           ${
-                            !jean.available || !!inCart
+                            !hoodie.available || !!inCart
                               ? "cursor-not-allowed"
                               : ""
                           }
@@ -238,21 +266,24 @@ const Hoodies = () => {
                   className={`${
                     inCart
                       ? "bg-black text-white"
-                      : jean.available
+                      : hoodie.available
                       ? "cursor-pointer bg-primary-color text-white"
                       : "bg-gray-200 text-gray-500 cursor-not-allowed"
                   } mt-4 w-full flex items-center justify-center gap-2 py-2.5 rounded-md transition-all duration-200 hover:shadow-md ${
-                    jean.available && !inCart
+                    hoodie.available && !inCart && !isAdding
                       ? "hover:bg-opacity-90 transform hover:translate-y-[-1px]"
                       : ""
                   }`}
-                  disabled={!jean.available}
-                  onClick={() => {
-                    inCart ? removeFromCart(jean) : handleAddToCart(jean);
-                  }}
+                  disabled={!hoodie.available || isAdding}
+                  onClick={() => handleAddToCart(hoodie)}
                 >
-                  {!jean.available ? (
+                  {!hoodie.available ? (
                     "Out of stock"
+                  ) : isAdding ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      {inCart ? "Removing..." : "Adding..."}
+                    </>
                   ) : inCart ? (
                     <>
                       <CheckCircle2Icon className="h-4 w-4" />
