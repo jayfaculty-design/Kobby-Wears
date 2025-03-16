@@ -26,7 +26,7 @@ interface Product {
 const Hoodies = () => {
   const [hoodies, setHoodies] = useState<Product[]>([]);
   const [products, loading, errorMessage, fetchData] = useFetch<Product[]>(
-    "http://localhost:3001/products"
+    "https://kobby-wears.onrender.com/products"
   );
 
   // Get cart context

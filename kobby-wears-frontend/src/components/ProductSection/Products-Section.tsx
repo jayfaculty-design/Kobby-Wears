@@ -5,7 +5,6 @@ import {
   Loader2,
   CheckCircle2Icon,
   ChevronDown,
-  Heart,
 } from "lucide-react";
 import React, { useContext, useEffect, useState } from "react";
 import { Link } from "react-router";
@@ -26,11 +25,11 @@ interface Product {
 
 const ProductsSection = () => {
   const [products, errorMessage, loading, fetchData] = useFetch<Product[]>(
-    "http://localhost:3001/products"
+    "https://kobby-wears.onrender.com/products"
   );
   const [selectedTab, setSelectedTab] = useState("All");
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
-  const [favorites, setFavorites] = useState<number[]>([]);
+
   const [isGridView, setIsGridView] = useState(true);
 
   // Track selected size for each product
@@ -89,15 +88,6 @@ const ProductsSection = () => {
       quantity: 1,
     };
     addToCart(productWithSize);
-  };
-
-  // Toggle favorite status
-  const toggleFavorite = (productId: number) => {
-    setFavorites((prev) =>
-      prev.includes(productId)
-        ? prev.filter((id) => id !== productId)
-        : [...prev, productId]
-    );
   };
 
   return (
@@ -386,29 +376,6 @@ const ProductsSection = () => {
                     </div>
 
                     <div className="flex items-center justify-between mt-4">
-                      <button
-                        onClick={() => toggleFavorite(product.id)}
-                        className={`p-2 rounded-full hover:bg-gray-100 transition-colors ${
-                          favorites.includes(product.id)
-                            ? "text-red-500"
-                            : "text-gray-400 hover:text-gray-700"
-                        }`}
-                        aria-label={
-                          favorites.includes(product.id)
-                            ? "Remove from favorites"
-                            : "Add to favorites"
-                        }
-                      >
-                        <Heart
-                          size={20}
-                          fill={
-                            favorites.includes(product.id)
-                              ? "currentColor"
-                              : "none"
-                          }
-                        />
-                      </button>
-
                       <button
                         onClick={() =>
                           !inCart

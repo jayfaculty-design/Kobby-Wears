@@ -4,11 +4,9 @@ import { useNavigate } from "react-router";
 import {
   User,
   LogOut,
-
   Heart,
   MapPin,
   CreditCard,
-
   Edit,
   Save,
   AlertCircle,
@@ -105,6 +103,7 @@ const ProfilePage = () => {
 
   useEffect(() => {
     fetchProfile();
+    window.scrollTo(0, 0);
   }, []);
 
   const handleLogout = () => {

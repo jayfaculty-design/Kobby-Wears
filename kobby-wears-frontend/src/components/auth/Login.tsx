@@ -28,61 +28,64 @@ const Login = () => {
     }
   }, [navigate]);
 
-interface LoginResponse {
+  interface LoginResponse {
     token: string;
-}
+  }
 
-interface LoginError {
+  interface LoginError {
     response?: {
-        data?: {
-            message?: string;
-        };
+      data?: {
+        message?: string;
+      };
     };
-}
+  }
 
-const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     // Form validation
     if (!username.trim() || !password.trim()) {
-        setError("Please enter both username and password");
-        return;
+      setError("Please enter both username and password");
+      return;
     }
 
     setLoading(true);
     setError("");
 
     try {
-        const res = await axios.post<LoginResponse>("http://localhost:3001/login", {
-            username,
-            password,
-        });
-
-        const { token } = res.data;
-
-        // Store token in localStorage
-        localStorage.setItem("token", token);
-
-        // If remember me is checked, store username in localStorage
-        if (rememberMe) {
-            localStorage.setItem("rememberedUsername", username);
-        } else {
-            localStorage.removeItem("rememberedUsername");
+      const res = await axios.post<LoginResponse>(
+        "http://localhost:3001/login",
+        {
+          username,
+          password,
         }
+      );
 
-        // Redirect to home page
-        navigate("/");
+      const { token } = res.data;
+
+      // Store token in localStorage
+      localStorage.setItem("token", token);
+
+      // If remember me is checked, store username in localStorage
+      if (rememberMe) {
+        localStorage.setItem("rememberedUsername", username);
+      } else {
+        localStorage.removeItem("rememberedUsername");
+      }
+
+      // Redirect to home page
+      navigate("/");
     } catch (err) {
-        const error = err as LoginError;
-        console.error("Login error:", error);
-        setError(
-            error.response?.data?.message ||
-                "Invalid username or password. Please try again."
-        );
+      const error = err as LoginError;
+      console.error("Login error:", error);
+      setError(
+        error.response?.data?.message ||
+          "Invalid username or password. Please try again."
+      );
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
-};
+  };
 
   // Load remembered username if available
   useEffect(() => {
@@ -91,6 +94,9 @@ const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
       setUsername(rememberedUsername);
       setRememberMe(true);
     }
+  }, []);
+  useEffect(() => {
+    window.scrollTo(0, 0);
   }, []);
 
   return (

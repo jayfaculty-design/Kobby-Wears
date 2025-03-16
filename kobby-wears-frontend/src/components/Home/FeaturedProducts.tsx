@@ -21,7 +21,7 @@ interface Product {
 
 const FeaturedProducts = () => {
   const [products, errorMessage, loading, fetchData] = useFetch<Product[]>(
-    "http://localhost:3001/products"
+    "https://kobby-wears.onrender.com/products"
   );
 
   // Track selected size for each product
