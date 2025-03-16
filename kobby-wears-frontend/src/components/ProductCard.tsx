@@ -1,12 +1,10 @@
-import { CartContext } from "@/contexts/CartContext";
-import {
-  CheckCircle2Icon,
-  Loader2,
-  ShoppingCartIcon,
-  ChevronDown,
-} from "lucide-react";
-import { useContext, useState } from "react";
+// src/components/ProductCard/index.tsx
+import { useState } from "react";
 import { Link } from "react-router";
+import { CheckCircle2Icon, ShoppingCartIcon, Loader2 } from "lucide-react";
+import { useCart } from "@/contexts/useCart";
+import SizeSelector from "./ProductSection/SizeSelector";
+import AddToCartButton from "./ProductSection/AddToCartButton";
 
 interface Product {
   id: number;
@@ -35,49 +33,49 @@ const ProductCard = ({
   onSizeChange,
   sizes,
 }: ProductCardProps) => {
-  const [isAdding, setIsAdding] = useState(false);
-
-  // Get cart context
-  const cartContext = useContext(CartContext);
-  if (!cartContext) {
-    throw new Error("CartContext must be used within a CartProvider");
-  }
-  const { cartItems, addToCart, removeFromCart } = cartContext;
+  const {
+    cartItems,
+    addToCart,
+    removeFromCart,
+    loading: cartLoading,
+  } = useCart();
+  const [isLoading, setIsLoading] = useState(false);
 
   // Check if product is in cart
-  const isInCart = cartItems.some((item) => item.product_id === product.id);
-
-  // Get cart item by product id
-  const getCartItem = () => {
-    return cartItems.find((item) => item.product_id === product.id);
-  };
+  const inCart = cartItems.find((item) => item.product_id === product.id);
 
   // Add product to cart with selected size
   const handleAddToCart = async () => {
-    setIsAdding(true);
-
+    setIsLoading(true);
     try {
       const productWithSize = {
         ...product,
         size: selectedSize,
         quantity: 1,
       };
-
-      if (isInCart) {
-        const cartItem = getCartItem();
-        if (cartItem) {
-          await removeFromCart({ id: cartItem.id });
-        }
-      } else {
-        await addToCart(productWithSize);
-      }
+      await addToCart(productWithSize);
     } catch (error) {
-      console.error("Error managing cart:", error);
-      // Toast notification would be added here
+      console.error("Failed to add product to cart:", error);
     } finally {
-      setIsAdding(false);
+      setIsLoading(false);
     }
   };
+
+  // Remove product from cart
+  const handleRemoveFromCart = async () => {
+    if (!inCart) return;
+
+    setIsLoading(true);
+    try {
+      await removeFromCart({ id: inCart.id });
+    } catch (error) {
+      console.error("Failed to remove product from cart:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const isProductLoading = isLoading || cartLoading;
 
   return (
     <div className="product-box bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-all duration-300">
@@ -145,79 +143,41 @@ const ProductCard = ({
             )}
           </div>
 
-          {/* Styled Size Selector */}
-          <div className="relative">
-            <div className="text-xs text-neutral-500 mb-1">Size</div>
-            <div
-              className={`relative inline-block ${
-                !product.available || isInCart ? "opacity-60" : ""
-              }`}
-            >
-              <select
-                value={selectedSize}
-                onChange={(e) => onSizeChange(e.target.value)}
-                disabled={!product.available || isInCart}
-                className={`
-                  appearance-none
-                  bg-neutral-50
-                  border
-                  ${
-                    isInCart
-                      ? "border-black"
-                      : "border-neutral-200 hover:border-neutral-400"
-                  }
-                  rounded-md
-                  py-1.5
-                  pl-3
-                  pr-8
-                  text-sm
-                  font-medium
-                  focus:outline-none
-                  focus:ring-2
-                  focus:ring-primary-color
-                  focus:border-transparent
-                  cursor-pointer
-                  transition-all
-                  duration-200
-                  ${!product.available || isInCart ? "cursor-not-allowed" : ""}
-                `}
-              >
-                {sizes.map((size, index) => (
-                  <option key={index} value={size}>
-                    {size}
-                  </option>
-                ))}
-              </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-neutral-500">
-                <ChevronDown size={14} />
-              </div>
-            </div>
-          </div>
+          <SizeSelector
+            product={product}
+            selectedSize={selectedSize}
+            onSizeChange={onSizeChange}
+            sizes={sizes}
+            disabled={!product.available || !!inCart || isProductLoading}
+          />
         </div>
 
         <button
           className={`${
-            isInCart
+            inCart
               ? "bg-black text-white"
               : product.available
               ? "cursor-pointer bg-primary-color text-white"
               : "bg-gray-200 text-gray-500 cursor-not-allowed"
           } mt-4 w-full flex items-center justify-center gap-2 py-2.5 rounded-md transition-all duration-200 hover:shadow-md ${
-            product.available && !isInCart && !isAdding
+            product.available && !inCart && !isProductLoading
               ? "hover:bg-opacity-90 transform hover:translate-y-[-1px]"
               : ""
-          }`}
-          disabled={!product.available || isAdding}
-          onClick={handleAddToCart}
+          } ${isProductLoading ? "opacity-70 cursor-wait" : ""}`}
+          disabled={!product.available || isProductLoading}
+          onClick={() => {
+            if (isProductLoading) return;
+            inCart ? handleRemoveFromCart() : handleAddToCart();
+          }}
         >
-          {!product.available ? (
-            "Out of stock"
-          ) : isAdding ? (
+          {isProductLoading ? (
             <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              {isInCart ? "Removing..." : "Adding..."}
+              <Loader2 size={16} className="animate-spin mr-1" />
+              Processing...
             </>
-          ) : isInCart ? (
+          ) : !product.available ? (
+            "Out of stock"
+          ) : inCart ? (
             <>
               <CheckCircle2Icon className="h-4 w-4" />
               Added to cart
@@ -233,5 +193,9 @@ const ProductCard = ({
     </div>
   );
 };
+
+// Attach subcomponents
+ProductCard.SizeSelector = SizeSelector;
+ProductCard.AddToCartButton = AddToCartButton;
 
 export default ProductCard;

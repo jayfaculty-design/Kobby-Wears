@@ -1,13 +1,10 @@
-import { CartContext } from "@/contexts/CartContext";
-import useFetch from "@/customHooks/useFetch";
-import {
-  ShoppingCartIcon,
-  Loader2,
-  CheckCircle2Icon,
-  ChevronDown,
-} from "lucide-react";
-import React, { useContext, useEffect, useState } from "react";
+// src/components/ProductsSection.tsx
+import { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router";
+import { Loader2 } from "lucide-react";
+import useFetch from "@/customHooks/useFetch";
+import ProductCard from "@/components/ProductCard";
+import ProductSkeleton from "@/components/ProductSkeleton";
 
 interface Product {
   id: number;
@@ -24,12 +21,11 @@ interface Product {
 }
 
 const ProductsSection = () => {
-  const [products, errorMessage, loading, fetchData] = useFetch<Product[]>(
+  const [products, loading, errorMessage, fetchData] = useFetch<Product[]>(
     "https://kobby-wears.onrender.com/products"
   );
   const [selectedTab, setSelectedTab] = useState("All");
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
-
   const [isGridView, setIsGridView] = useState(true);
 
   // Track selected size for each product
@@ -39,7 +35,7 @@ const ProductsSection = () => {
   const sizes = ["S", "M", "L", "XL"];
 
   // Extract unique categories
-  const categories = React.useMemo(() => {
+  const categories = useMemo(() => {
     if (!products || !products.length) return ["All"];
     return [
       "All",
@@ -66,12 +62,6 @@ const ProductsSection = () => {
     setSelectedSizes(initialSizes);
   }, [selectedTab, products]);
 
-  const cartContext = useContext(CartContext);
-  if (!cartContext) {
-    throw new Error("CartContext must be used within a CartProvider");
-  }
-  const { cartItems, addToCart, removeFromCart } = cartContext;
-
   // Handle size change for a specific product
   const handleSizeChange = (productId: number, size: string) => {
     setSelectedSizes((prev) => ({
@@ -80,15 +70,96 @@ const ProductsSection = () => {
     }));
   };
 
-  // Add product to cart with selected size
-  const handleAddToCart = (product: Product) => {
-    const productWithSize = {
-      ...product,
-      size: selectedSizes[product.id] || sizes[0],
-      quantity: 1,
-    };
-    addToCart(productWithSize);
-  };
+  // Render list view item
+  const renderListViewItem = (product: Product) => (
+    <div
+      key={product.id}
+      className="product-box bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col md:flex-row"
+    >
+      <div className="relative group md:w-1/3">
+        <Link to={`/products/${product.id}`}>
+          <img
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            src={product.img_url || "/placeholder-product.jpg"}
+            alt={product.name}
+            loading="lazy"
+          />
+        </Link>
+        {!product.available && (
+          <div className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
+            Out of Stock
+          </div>
+        )}
+        {product.featured && (
+          <div className="absolute top-2 right-2 bg-yellow-500 text-white text-xs font-bold px-2 py-1 rounded">
+            Featured
+          </div>
+        )}
+      </div>
+
+      <div className="p-4 flex flex-col md:w-2/3">
+        <div className="flex-grow">
+          <span className="inline-block px-2 py-1 text-xs font-semibold bg-gray-100 text-gray-600 rounded mb-2">
+            {product.category}
+          </span>
+          <h3 className="text-lg font-medium text-gray-900 mb-1">
+            {product.name}
+          </h3>
+          <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+            {product.description}
+          </p>
+          <div className="flex items-center mb-2">
+            {Array(5)
+              .fill(0)
+              .map((_, i) => (
+                <svg
+                  key={i}
+                  className={`w-4 h-4 ${
+                    i < 4 ? "text-yellow-400" : "text-gray-300"
+                  }`}
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                </svg>
+              ))}
+            <span className="text-xs text-gray-500 ml-1">(4.0)</span>
+          </div>
+        </div>
+
+        <div className="flex justify-between items-center mt-2">
+          <div className="flex items-center">
+            <span className="text-xl font-bold text-primary-color">
+              ₵
+              {typeof product.price === "number"
+                ? product.price.toFixed(2)
+                : product.price}
+            </span>
+            {product.price < 100 && (
+              <span className="ml-2 text-xs line-through text-gray-400">
+                ₵{(product.price * 1.2).toFixed(2)}
+              </span>
+            )}
+          </div>
+
+          <ProductCard.SizeSelector
+            product={product}
+            selectedSize={selectedSizes[product.id] || sizes[0]}
+            onSizeChange={(size) => handleSizeChange(product.id, size)}
+            sizes={sizes}
+          />
+        </div>
+
+        <div className="flex items-center justify-between mt-4">
+          <ProductCard.AddToCartButton
+            product={product}
+            selectedSize={selectedSizes[product.id] || sizes[0]}
+            className="flex-1 ml-2 w-auto px-6"
+          />
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <section className="py-12 px-4 sm:px-6 lg:px-8 bg-gray-50">
@@ -175,8 +246,10 @@ const ProductsSection = () => {
 
         {/* Loading State */}
         {loading && (
-          <div className="flex justify-center items-center py-20">
-            <Loader2 className="animate-spin h-10 w-10 text-primary-color" />
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {Array.from({ length: 8 }).map((_, index) => (
+              <ProductSkeleton key={index} />
+            ))}
           </div>
         )}
 
@@ -227,189 +300,19 @@ const ProductsSection = () => {
                 : "flex flex-col space-y-4"
             }
           >
-            {filteredProducts.map((product) => {
-              const inCart = cartItems.find(
-                (cartItem) => cartItem.id === product.id
-              );
-
-              return (
-                <div
+            {filteredProducts.map((product) =>
+              isGridView ? (
+                <ProductCard
                   key={product.id}
-                  className={`product-box bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-all duration-300 ${
-                    !isGridView ? "flex flex-col md:flex-row" : ""
-                  }`}
-                >
-                  <div
-                    className={`relative group ${
-                      !isGridView ? "md:w-1/3" : "h-48 sm:h-56"
-                    }`}
-                  >
-                    <Link to={`/products/${product.id}`}>
-                      <img
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                        src={product.img_url || "/placeholder-product.jpg"}
-                        alt={product.name}
-                        loading="lazy"
-                      />
-                    </Link>
-                    {!product.available && (
-                      <div className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
-                        Out of Stock
-                      </div>
-                    )}
-                    {product.featured && (
-                      <div className="absolute top-2 right-2 bg-yellow-500 text-white text-xs font-bold px-2 py-1 rounded">
-                        Featured
-                      </div>
-                    )}
-                  </div>
-
-                  <div
-                    className={`p-4 flex flex-col ${
-                      !isGridView ? "md:w-2/3" : ""
-                    }`}
-                  >
-                    <div className="flex-grow">
-                      <span className="inline-block px-2 py-1 text-xs font-semibold bg-gray-100 text-gray-600 rounded mb-2">
-                        {product.category}
-                      </span>
-                      <h3 className="text-lg font-medium text-gray-900 mb-1 line-clamp-1">
-                        {product.name}
-                      </h3>
-                      {!isGridView && (
-                        <p className="text-gray-600 text-sm mb-3 line-clamp-2">
-                          {product.description}
-                        </p>
-                      )}
-                      <div className="flex items-center mb-2">
-                        {Array(5)
-                          .fill(0)
-                          .map((_, i) => (
-                            <svg
-                              key={i}
-                              className={`w-4 h-4 ${
-                                i < 4 ? "text-yellow-400" : "text-gray-300"
-                              }`}
-                              fill="currentColor"
-                              viewBox="0 0 20 20"
-                            >
-                              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
-                            </svg>
-                          ))}
-                        <span className="text-xs text-gray-500 ml-1">
-                          (4.0)
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex justify-between items-center mt-2">
-                      <div className="flex items-center">
-                        <span className="text-xl font-bold text-primary-color">
-                          ₵
-                          {typeof product.price === "number"
-                            ? product.price.toFixed(2)
-                            : product.price}
-                        </span>
-                        {product.price < 100 && (
-                          <span className="ml-2 text-xs line-through text-gray-400">
-                            ₵{(product.price * 1.2).toFixed(2)}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Styled Size Selector */}
-                      <div className="relative">
-                        <div className="text-xs text-neutral-500 mb-1">
-                          Size
-                        </div>
-                        <div
-                          className={`relative inline-block ${
-                            !product.available || !!inCart ? "opacity-60" : ""
-                          }`}
-                        >
-                          <select
-                            value={selectedSizes[product.id] || sizes[0]}
-                            onChange={(e) =>
-                              handleSizeChange(product.id, e.target.value)
-                            }
-                            disabled={!product.available || !!inCart}
-                            className={`
-                              appearance-none
-                              bg-neutral-50
-                              border
-                              ${
-                                inCart
-                                  ? "border-black"
-                                  : "border-neutral-200 hover:border-neutral-400"
-                              }
-                              rounded-md
-                              py-1.5
-                              pl-3
-                              pr-8
-                              text-sm
-                              font-medium
-                              focus:outline-none
-                              focus:ring-2
-                              focus:ring-primary-color
-                              focus:border-transparent
-                              cursor-pointer
-                              transition-all
-                              duration-200
-                              ${
-                                !product.available || !!inCart
-                                  ? "cursor-not-allowed"
-                                  : ""
-                              }
-                            `}
-                          >
-                            {sizes.map((size, index) => (
-                              <option key={index} value={size}>
-                                {size}
-                              </option>
-                            ))}
-                          </select>
-                          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-neutral-500">
-                            <ChevronDown size={14} />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between mt-4">
-                      <button
-                        onClick={() =>
-                          !inCart
-                            ? handleAddToCart(product)
-                            : removeFromCart(product)
-                        }
-                        disabled={!product.available}
-                        className={`flex-1 ml-2 flex items-center justify-center gap-2 py-2.5 rounded-md transition-all duration-200 ${
-                          inCart
-                            ? "bg-black text-white hover:bg-neutral-800"
-                            : product.available
-                            ? "bg-primary-color text-white hover:bg-opacity-90 transform hover:translate-y-[-1px]"
-                            : "bg-gray-200 text-gray-500 cursor-not-allowed"
-                        } ${!isGridView ? "w-auto px-6" : ""}`}
-                      >
-                        {!product.available ? (
-                          "Out of stock"
-                        ) : inCart ? (
-                          <>
-                            <CheckCircle2Icon className="h-4 w-4" />
-                            Added to cart
-                          </>
-                        ) : (
-                          <>
-                            <ShoppingCartIcon className="h-4 w-4" />
-                            Add to cart
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+                  product={product}
+                  selectedSize={selectedSizes[product.id] || sizes[0]}
+                  onSizeChange={(size) => handleSizeChange(product.id, size)}
+                  sizes={sizes}
+                />
+              ) : (
+                renderListViewItem(product)
+              )
+            )}
           </div>
         )}
       </div>
