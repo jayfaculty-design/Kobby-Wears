@@ -81,7 +81,7 @@ const ProfilePage = () => {
 
     axios({
       method: "get",
-      url: "http://localhost:3001/profile",
+      url: "https://kobby-wears.onrender.com/profile",
       headers: {
         Authorization: `Bearer ${token}`,
       },
