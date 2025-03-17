@@ -259,7 +259,7 @@ const ProductsDetails = () => {
           {/* Add to Cart Button */}
           <button
             onClick={handleAddToCart}
-            disabled={addingToCart || cartLoading}
+            disabled={addingToCart || cartLoading || !mainProduct.available}
             className={`w-full py-4 px-6 cursor-pointer rounded-md font-medium flex items-center justify-center gap-2 transition-all duration-300 ${
               inCart
                 ? "bg-black text-white hover:bg-neutral-800"
@@ -275,6 +275,11 @@ const ProductsDetails = () => {
               <>
                 <CheckCircle2Icon size={20} />
                 Added to Cart
+              </>
+            ) : !mainProduct.available ? (
+              <>
+                <ShoppingBag size={20} />
+                Out of stock
               </>
             ) : (
               <>
