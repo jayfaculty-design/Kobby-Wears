@@ -1,4 +1,4 @@
-// src/components/ProductsSection.tsx
+
 import { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router";
 
