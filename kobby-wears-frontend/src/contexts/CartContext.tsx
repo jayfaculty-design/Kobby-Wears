@@ -1,7 +1,7 @@
 import axios from "axios";
 import { createContext, useContext, useEffect, useState } from "react";
 
-// Define the Product interface to match what's used in your components
+
 interface Product {
   id: number;
   price: number;
@@ -16,7 +16,7 @@ interface Product {
   featured?: boolean;
 }
 
-// Define CartItem interface to match your backend response
+
 interface CartItem {
   id: number;
   quantity: number;
@@ -48,7 +48,7 @@ export const CartContext = createContext<CartContextType | undefined>(
 import { ReactNode } from "react";
 import toast from "react-hot-toast";
 
-// Create an axios instance with the base URL
+
 const api = axios.create({
   baseURL: "https://kobby-wears.onrender.com",
   headers: {
@@ -140,7 +140,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       const productToAdd = {
         product_id: product.id,
         quantity: product.quantity || 1,
-        size: product.size || "One Size", // Match backend default
+        size: product.size || "One Size", 
         color: product.color || "Default",
       };
 
@@ -313,7 +313,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
-// Create a custom hook for easier access to the cart context
+// custom hook for easier access to the cart context
 export const useCart = () => {
   const context = useContext(CartContext);
   if (context === undefined) {
