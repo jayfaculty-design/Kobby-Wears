@@ -1,4 +1,3 @@
-// src/components/ProductCard/AddToCartButton.tsx
 import { useState } from "react";
 import { CheckCircle2Icon, ShoppingCartIcon, Loader2 } from "lucide-react";
 import { useCart } from "@/contexts/useCart";
@@ -36,10 +35,10 @@ const AddToCartButton = ({
   } = useCart();
   const [isLoading, setIsLoading] = useState(false);
 
-  // Check if product is in cart
+  // check if product is in cart
   const inCart = cartItems.find((item) => item.product_id === product.id);
 
-  // Add product to cart with selected size
+  // add product to cart with selected size
   const handleAddToCart = async () => {
     setIsLoading(true);
     try {
