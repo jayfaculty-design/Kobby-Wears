@@ -29,6 +29,7 @@ const Shirts = () => {
   const [shirts, setShirts] = useState<Product[]>([]);
   const [products, loading, errorMessage, fetchData] = useFetch<Product[]>(
     "https://kobby-wears.onrender.com/products"
+    // "http://localhost:3001/products"
   );
   const [addingToCart, setAddingToCart] = useState<Record<number, boolean>>({});
 

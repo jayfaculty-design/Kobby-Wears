@@ -18,6 +18,7 @@ if (!secretKey) {
 app.use(
   cors({
     origin: process.env.FRONTEND_URL || "https://kobby-wears.vercel.app",
+    // origin: "http://localhost:5173",
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
@@ -31,11 +32,7 @@ const pool = new Pool({
   // database: "kobby-wears",
   // password: "facultyf",
   // port: 5432,
-  // user: process.env.DB_USER,
-  // host: process.env.DB_HOST,
-  // database: process.env.DB_DATABASE,
-  // password: process.env.DB_PASSWORD,
-  // port: process.env.DB_PORT,
+
   // Web connection starts here
   ssl: { rejectUnauthorized: false },
   connectionString: process.env.DATABASE_URL,

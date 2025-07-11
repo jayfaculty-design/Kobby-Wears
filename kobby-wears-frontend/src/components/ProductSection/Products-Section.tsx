@@ -23,6 +23,7 @@ interface Product {
 const ProductsSection = () => {
   const [products, loading, errorMessage, fetchData] = useFetch<Product[]>(
     "https://kobby-wears.onrender.com/products"
+    // "http://localhost:3001/products"
   );
   const [selectedTab, setSelectedTab] = useState("All");
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
