@@ -1,4 +1,3 @@
-// src/pages/Caps.tsx
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { AlertCircle } from "lucide-react";
@@ -27,10 +26,10 @@ const Caps = () => {
     "https://kobby-wears.onrender.com/products"
   );
 
-  // Get cart context with updated hook
+  // get cart context with updated hook
   const { error: cartError } = useCart();
 
-  // Track selected size for each product
+  // track selected size for each product
   const [selectedSizes, setSelectedSizes] = useState<Record<number, string>>(
     {}
   );
@@ -42,7 +41,7 @@ const Caps = () => {
       const allCaps = products.filter((product) => product.category === "Caps");
       setCaps(allCaps);
 
-      // Initialize selected sizes for all products
+      // initialize selected sizes for all products
       const initialSizes: Record<number, string> = {};
       allCaps.forEach((product) => {
         initialSizes[product.id] = sizes[0];
@@ -51,7 +50,7 @@ const Caps = () => {
     }
   }, [products]);
 
-  // Handle size change for a specific product
+  // handle size change for a specific product
   const handleSizeChange = (productId: number, size: string) => {
     setSelectedSizes((prev) => ({
       ...prev,

@@ -1,4 +1,4 @@
-// src/hooks/useProducts.ts
+
 import { useState, useEffect } from "react";
 import api from "@/services/api";
 
@@ -32,7 +32,7 @@ export const useProducts = () => {
     try {
       const now = Date.now();
 
-      // Use cache if available and not expired, unless force refresh is requested
+      // use cache if available and not expired, unless force refresh is requested
       if (
         !forceRefresh &&
         productsCache &&

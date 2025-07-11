@@ -1,4 +1,4 @@
-// src/pages/Hoodies.tsx
+
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
 

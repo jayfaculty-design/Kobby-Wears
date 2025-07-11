@@ -1,4 +1,4 @@
-// src/pages/Shirts.tsx
+
 import { CartContext } from "@/contexts/CartContext";
 import useFetch from "@/customHooks/useFetch";
 import {

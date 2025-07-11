@@ -1,4 +1,4 @@
-// src/components/ProductCard/index.tsx
+
 import { useState } from "react";
 import { Link } from "react-router";
 import { CheckCircle2Icon, ShoppingCartIcon, Loader2 } from "lucide-react";
